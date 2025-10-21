@@ -47,12 +47,16 @@ export class AuthService {
   private async checkAndMarkNonce(message: string, ttlSeconds = 86400): Promise<void> {
     try {
       const key = `nonce:${createHash('sha256').update(message).digest('hex')}`;
-      const setResult = await this.redis.set(key, '1', 'NX', 'EX', ttlSeconds);
+      const setResult = await this.redis.set(key, '1', 'EX', ttlSeconds, 'NX');
       if (setResult !== 'OK') {
         throw new UnauthorizedException('Replay attack detected: message already used.');
       }
     } catch (error) {
-      // Fail closed: if Redis is unavailable, reject verification
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      // Optionally more robust detection: if the error is a Redis client error
+      // (e.g. instanceof Redis.RedisError or error.name/code indicating connection issue)
       console.error('Redis error during nonce check:', error);
       throw new InternalServerErrorException('Authentication service temporarily unavailable.');
     }
