@@ -48,7 +48,7 @@ export class AuthService {
     try {
       const key = `nonce:${createHash('sha256').update(message).digest('hex')}`;
       const setResult = await this.redis.set(key, '1', 'EX', ttlSeconds, 'NX');
-      if (setResult !== 'OK') {
+      if (setResult === null) {
         throw new UnauthorizedException('Replay attack detected: message already used.');
       }
     } catch (error) {
