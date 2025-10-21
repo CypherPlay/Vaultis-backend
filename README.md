@@ -27,6 +27,13 @@
 
 ## Project setup
 
+This project uses Redis for managing nonces to prevent replay attacks. Ensure you have a Redis instance running and configure its connection URL.
+
+### Environment Variables
+
+- `REDIS_URL`: The connection string for your Redis instance (e.g., `redis://localhost:6379`).
+- `JWT_SECRET`: Secret key for JWT signing.
+
 ```bash
 $ npm install
 ```

@@ -1,12 +1,16 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { verifyMessage } from 'ethers';
+import Redis from 'ioredis';
+import { createHash } from 'crypto';
+import { REDIS_CLIENT } from '../database/redis.module';
 
 @Injectable()
 export class AuthService {
-  private readonly usedNonces: Set<string> = new Set(); // In-memory store for used nonces. For production, use a persistent store.
-
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+  ) {}
 
   async generateToken(payload: any): Promise<string> {
     return this.jwtService.sign(payload);
@@ -17,21 +21,40 @@ export class AuthService {
   }
 
   async verifySignature(message: string, signature: string, publicAddress: string): Promise<string> {
-    // Check for replay attacks
-    if (this.usedNonces.has(message)) {
-      throw new UnauthorizedException('Replay attack detected: message already used.');
+    // 1. Input validation
+    if (!message || !signature || !publicAddress) {
+      throw new UnauthorizedException('Invalid parameters: message, signature, and address are required.');
     }
 
+    if (!/^0x[a-fA-F0-9]{40}$/.test(publicAddress)) {
+      throw new UnauthorizedException('Invalid Ethereum address format.');
+    }
+
+    // 2. Verify signature
     const recoveredAddress = verifyMessage(message, signature);
 
     if (recoveredAddress.toLowerCase() !== publicAddress.toLowerCase()) {
       throw new UnauthorizedException('Signature verification failed.');
     }
 
-    // Mark the message as used to prevent replay attacks
-    this.usedNonces.add(message);
+    // 3. Check for replay attacks (after successful signature verification)
+    await this.checkAndMarkNonce(message);
 
     const payload = { publicAddress };
     return this.generateToken(payload);
+  }
+
+  private async checkAndMarkNonce(message: string, ttlSeconds = 86400): Promise<void> {
+    try {
+      const key = `nonce:${createHash('sha256').update(message).digest('hex')}`;
+      const setResult = await this.redis.set(key, '1', 'NX', 'EX', ttlSeconds);
+      if (setResult !== 'OK') {
+        throw new UnauthorizedException('Replay attack detected: message already used.');
+      }
+    } catch (error) {
+      // Fail closed: if Redis is unavailable, reject verification
+      console.error('Redis error during nonce check:', error);
+      throw new InternalServerErrorException('Authentication service temporarily unavailable.');
+    }
   }
 }

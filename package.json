@@ -29,6 +29,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
     "ethers": "^6.15.0",
+    "ioredis": "^5.8.2",
     "mongoose": "^8.19.1",
     "passport-jwt": "^4.0.1",
     "pg": "^8.16.3",

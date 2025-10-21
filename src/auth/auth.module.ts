@@ -4,9 +4,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
+import { RedisModule } from '../database/redis.module';
 
 @Module({
   imports: [
+    ConfigModule, // Ensure ConfigModule is imported here for RedisModule to use ConfigService
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -16,6 +18,7 @@ import { JwtStrategy } from './jwt.strategy';
       }),
       inject: [ConfigService],
     }),
+    RedisModule, // Import RedisModule
   ],
   providers: [AuthService, JwtStrategy],
   exports: [AuthService, JwtModule, PassportModule],
