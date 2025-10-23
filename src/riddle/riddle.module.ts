@@ -7,7 +7,7 @@ import { RiddleController } from './riddle.controller';
   imports: [
     MongooseModule.forFeature([{ name: Riddle.name, schema: RiddleSchema }]),
   ],
-  providers: [],
+  providers: [RiddleService],
   controllers: [RiddleController],
 })
 export class RiddleModule {}
