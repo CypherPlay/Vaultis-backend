@@ -12,11 +12,11 @@ export class Riddle {
   @Prop({ required: true })
   answerHash: string;
 
-  @Prop({ required: true, type: Number })
-  entryFee: number;
+  @Prop({ required: true, type: Decimal128 })
+  entryFee: Decimal128;
 
-  @Prop({ required: true, type: Number })
-  prizePool: number;
+  @Prop({ required: true, type: Decimal128 })
+  prizePool: Decimal128;
 
   @Prop({ default: Date.now })
   createdAt: Date;

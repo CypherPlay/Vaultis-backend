@@ -10,7 +10,7 @@ export class Guess {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Riddle', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'Riddle', required: true, index: true })
   riddleId: Types.ObjectId;
 
   @Prop({ required: true })
