@@ -16,4 +16,8 @@ export class RiddleService {
       .sort({ createdAt: -1 })
       .exec();
   }
+
+  async findAll(): Promise<Riddle[]> {
+    return this.riddleModel.find().exec();
+  }
 }

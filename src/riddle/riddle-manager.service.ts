@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, SchedulerRegistry } from '@nestjs/schedule';
 import { RiddleService } from './riddle.service';
-import { Riddle } from '../schemas/riddle.schema';
+import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
 
 @Injectable()
 export class RiddleManagerService implements OnModuleInit {
@@ -30,7 +30,9 @@ export class RiddleManagerService implements OnModuleInit {
     if (riddles.length > 0) {
       const randomIndex = Math.floor(Math.random() * riddles.length);
       this.activeRiddle = riddles[randomIndex];
-      this.logger.log(`Active riddle set to: ${this.activeRiddle._id}`);
+      if (this.activeRiddle) {
+        this.logger.log(`Active riddle set to: ${(this.activeRiddle as RiddleDocument)._id}`);
+      }
     } else {
       this.activeRiddle = null;
       this.logger.warn('No riddles found to rotate.');
