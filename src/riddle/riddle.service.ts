@@ -6,6 +6,7 @@ import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
 export class UpdateRiddleDto {
   expiresAt?: Date;
   lastUsedAt?: Date;
+  prizePool?: number;
 }
 
 @Injectable()
@@ -20,6 +21,10 @@ export class RiddleService {
       .findOne({ expiresAt: { $gt: new Date() } })
       .sort({ createdAt: -1 })
       .exec();
+  }
+
+  async findOne(id: string, session: any = null): Promise<RiddleDocument | null> {
+    return this.riddleModel.findById(id, { session }).exec();
   }
 
   async findAll(page = 1, limit = 100): Promise<RiddleDocument[]> {

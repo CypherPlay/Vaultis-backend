@@ -2,13 +2,17 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 import { Riddle, RiddleSchema } from '../schemas/riddle.schema';
+import { Guess, GuessSchema } from '../schemas/guess.schema';
 import { RiddleController } from './riddle.controller';
 import { RiddleService } from './riddle.service';
 import { RiddleManagerService } from './riddle-manager.service';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Riddle.name, schema: RiddleSchema }]),
+    MongooseModule.forFeature([
+      { name: Riddle.name, schema: RiddleSchema },
+      { name: Guess.name, schema: GuessSchema },
+    ]),
     ScheduleModule.forRoot(),
   ],
   providers: [RiddleService, RiddleManagerService],
