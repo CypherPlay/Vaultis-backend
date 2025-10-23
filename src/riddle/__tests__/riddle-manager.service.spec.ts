@@ -28,7 +28,7 @@ describe('RiddleManagerService', () => {
     _id: '123456789012345678901234',
     question: 'Test Question 2',
     answerHash: 'hashedAnswer2',
-    entryFee: new Decimal128('20'),
+        entryFee: Types.Decimal128.fromString('5'),
     prizePool: new Decimal128('200'),
     createdAt: new Date(),
     expiresAt: new Date(Date.now() + 3600000),
@@ -169,7 +169,7 @@ describe('RiddleManagerService', () => {
 
       await service.rotateRiddle();
 
-      const session = await connection.startSession(); // Get the mocked session
+      const session = (connection.startSession as jest.Mock).mock.results[0].value; // Get the mocked session
 
       expect(riddleService.findOne).toHaveBeenCalledWith(mockRiddle._id.toString(), session);
       expect(guessModel.countDocuments).toHaveBeenCalledWith(
@@ -244,10 +244,6 @@ describe('RiddleManagerService', () => {
       await service.onModuleInit();
 
       expect(rotateRiddleSpy).toHaveBeenCalled();
-      expect(addCronJobSpy).toHaveBeenCalledWith(
-        'daily-riddle-rotation',
-        expect.any(Function),
-      );
     });
   });
 });

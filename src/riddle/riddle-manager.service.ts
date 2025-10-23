@@ -3,7 +3,7 @@ import { Cron, SchedulerRegistry } from '@nestjs/schedule';
 import { RiddleService, UpdateRiddleDto } from './riddle.service';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
 import { Guess, GuessDocument } from '../schemas/guess.schema';
-import { ClientSession, Connection, Decimal128, Model } from 'mongoose';
+import { ClientSession, Connection, Model, Types } from 'mongoose';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 
 function isRiddleDocument(riddle: Riddle | RiddleDocument): riddle is RiddleDocument {
@@ -155,7 +155,7 @@ export class RiddleManagerService implements OnModuleInit {
       );
 
       const entryFee = Number(riddle.entryFee?.toString() ?? 0); // Harden arithmetic: default entryFee to 0 when missing
-      const newPrizePool = new Decimal128((totalGuesses * entryFee).toString());
+      const newPrizePool = Types.Decimal128.fromString((totalGuesses * entryFee).toString());
 
       const updatedRiddle = await this.riddleService.updateRiddleMetadata(
         riddleId,

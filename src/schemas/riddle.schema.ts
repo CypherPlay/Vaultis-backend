@@ -1,6 +1,6 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Decimal128, Document } from 'mongoose';
+import { Document } from 'mongoose';
 
 export type RiddleDocument = Riddle & Document;
 

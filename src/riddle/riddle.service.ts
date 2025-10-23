@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ClientSession, Decimal128, Model } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
 
 export class UpdateRiddleDto {
