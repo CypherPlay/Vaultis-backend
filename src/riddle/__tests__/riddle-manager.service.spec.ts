@@ -3,22 +3,23 @@ import { RiddleManagerService } from '../riddle-manager.service';
 import { RiddleService } from '../riddle.service';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { RiddleDocument } from '../../schemas/riddle.schema';
-import { Connection, Model, Query } from 'mongoose';
+import { ClientSession, Connection, Decimal128, Model, Query } from 'mongoose';
 import { getModelToken } from '@nestjs/mongoose';
+import { GuessDocument } from '../../schemas/guess.schema';
 
 describe('RiddleManagerService', () => {
   let service: RiddleManagerService;
   let riddleService: RiddleService;
   let schedulerRegistry: SchedulerRegistry;
   let connection: Connection;
-  let riddleModel: Model<RiddleDocument>;
+  let guessModel: Model<GuessDocument>;
 
   const mockRiddle: RiddleDocument = {
     _id: '654321098765432109876543',
     question: 'Test Question',
     answerHash: 'hashedAnswer',
-    entryFee: 10,
-    prizePool: 100,
+    entryFee: new Decimal128('10'),
+    prizePool: new Decimal128('100'),
     createdAt: new Date(),
     expiresAt: new Date(Date.now() + 3600000),
     lastUsedAt: null,
@@ -28,8 +29,8 @@ describe('RiddleManagerService', () => {
     _id: '123456789012345678901234',
     question: 'Test Question 2',
     answerHash: 'hashedAnswer2',
-    entryFee: 20,
-    prizePool: 200,
+    entryFee: new Decimal128('20'),
+    prizePool: new Decimal128('200'),
     createdAt: new Date(),
     expiresAt: new Date(Date.now() + 3600000),
     lastUsedAt: null,
@@ -45,6 +46,7 @@ describe('RiddleManagerService', () => {
             findOneEligibleRiddle: jest.fn(),
             updateRiddleMetadata: jest.fn(),
             findCurrentRiddle: jest.fn(),
+            findOne: jest.fn(),
           },
         },
         {
@@ -63,6 +65,12 @@ describe('RiddleManagerService', () => {
               abortTransaction: jest.fn(),
               endSession: jest.fn(),
             }),
+          },
+        },
+        {
+          provide: getModelToken('Guess'),
+          useValue: {
+            countDocuments: jest.fn().mockResolvedValue(5),
           },
         },
         {
@@ -88,7 +96,7 @@ describe('RiddleManagerService', () => {
     riddleService = module.get<RiddleService>(RiddleService);
     schedulerRegistry = module.get<SchedulerRegistry>(SchedulerRegistry);
     connection = module.get<Connection>(Connection);
-    riddleModel = module.get<Model<RiddleDocument>>(getModelToken('Riddle'));
+    guessModel = module.get<Model<GuessDocument>>(getModelToken('Guess'));
 
     (service as any).logger = { // Mock the logger
       log: jest.fn(),
@@ -151,6 +159,41 @@ describe('RiddleManagerService', () => {
       expect(service.getActiveRiddle()).toEqual(mockRiddle2);
     });
 
+    it('should call updatePrizePool with the active session and update prize pool correctly', async () => {
+      (service as any).activeRiddle = mockRiddle;
+      jest.spyOn(riddleService, 'findOneEligibleRiddle').mockResolvedValue(mockRiddle2);
+      jest.spyOn(riddleService, 'updateRiddleMetadata')
+        .mockResolvedValueOnce({ ...mockRiddle, expiresAt: new Date(), lastUsedAt: new Date() } as RiddleDocument)
+        .mockResolvedValueOnce(mockRiddle2);
+      jest.spyOn(riddleService, 'findOne').mockResolvedValue(mockRiddle);
+      jest.spyOn(guessModel, 'countDocuments').mockResolvedValue(5);
+
+      await service.rotateRiddle();
+
+      const session = await connection.startSession(); // Get the mocked session
+
+      expect(riddleService.findOne).toHaveBeenCalledWith(mockRiddle._id.toString(), session);
+      expect(guessModel.countDocuments).toHaveBeenCalledWith(
+        { riddleId: mockRiddle._id },
+        { session },
+      );
+      expect(riddleService.updateRiddleMetadata).toHaveBeenCalledWith(
+        mockRiddle._id.toString(),
+        { prizePool: new Decimal128((5 * Number(mockRiddle.entryFee.toString())).toString()) },
+        session,
+      );
+      expect(riddleService.findOne).toHaveBeenCalledWith(mockRiddle2._id.toString(), session);
+      expect(guessModel.countDocuments).toHaveBeenCalledWith(
+        { riddleId: mockRiddle2._id },
+        { session },
+      );
+      expect(riddleService.updateRiddleMetadata).toHaveBeenCalledWith(
+        mockRiddle2._id.toString(),
+        { prizePool: new Decimal128((5 * Number(mockRiddle2.entryFee.toString())).toString()) },
+        session,
+      );
+    });
+
     it('should rollback if expiring the current riddle fails', async () => {
       (service as any).activeRiddle = mockRiddle;
       jest.spyOn(riddleService, 'updateRiddleMetadata').mockResolvedValueOnce(null);
@@ -190,6 +233,21 @@ describe('RiddleManagerService', () => {
       expect((service as any).logger.error).toHaveBeenCalledWith(
         expect.stringContaining('Error rotating riddle: DB connection lost'),
         expect.any(String),
+      );
+    });
+  });
+
+  describe('onModuleInit', () => {
+    it('should call rotateRiddle and schedule cron job on module initialization', async () => {
+      const rotateRiddleSpy = jest.spyOn(service, 'rotateRiddle').mockResolvedValue(undefined);
+      const addCronJobSpy = jest.spyOn(schedulerRegistry, 'addCronJob');
+
+      await service.onModuleInit();
+
+      expect(rotateRiddleSpy).toHaveBeenCalled();
+      expect(addCronJobSpy).toHaveBeenCalledWith(
+        'daily-riddle-rotation',
+        expect.any(Function),
       );
     });
   });

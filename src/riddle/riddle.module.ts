@@ -13,7 +13,6 @@ import { RiddleManagerService } from './riddle-manager.service';
       { name: Riddle.name, schema: RiddleSchema },
       { name: Guess.name, schema: GuessSchema },
     ]),
-    ScheduleModule.forRoot(),
   ],
   providers: [RiddleService, RiddleManagerService],
   controllers: [RiddleController],

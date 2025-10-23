@@ -3,7 +3,7 @@ import { Cron, SchedulerRegistry } from '@nestjs/schedule';
 import { RiddleService, UpdateRiddleDto } from './riddle.service';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
 import { Guess, GuessDocument } from '../schemas/guess.schema';
-import { Connection, Model } from 'mongoose';
+import { ClientSession, Connection, Decimal128, Model } from 'mongoose';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 
 function isRiddleDocument(riddle: Riddle | RiddleDocument): riddle is RiddleDocument {
@@ -64,7 +64,7 @@ export class RiddleManagerService implements OnModuleInit {
           return;
         }
         this.logger.log(`Successfully expired riddle: ${expiredRiddleId}`);
-        await this.updatePrizePool(expiredRiddleId);
+        await this.updatePrizePool(expiredRiddleId, session);
       }
 
       // Find and activate a new eligible riddle
@@ -102,7 +102,7 @@ export class RiddleManagerService implements OnModuleInit {
 
       await session.commitTransaction();
       this.activeRiddle = updatedNewRiddle;
-      await this.updatePrizePool(this.activeRiddle._id!.toString());
+      await this.updatePrizePool(this.activeRiddle._id!.toString(), session);
       this.logger.log(
         `Activated new riddle: ${this.activeRiddle._id}. Expires at: ${this.activeRiddle.expiresAt.toISOString()}.`,
       );
@@ -128,17 +128,24 @@ export class RiddleManagerService implements OnModuleInit {
    * Ensures atomic updates to prevent race conditions.
    * @param riddleId The ID of the riddle for which to update the prize pool.
    */
-  async updatePrizePool(riddleId: string): Promise<void> {
+  async updatePrizePool(riddleId: string, sessionArg?: ClientSession): Promise<void> {
     this.logger.log(`Updating prize pool for riddle: ${riddleId}`);
-    let session;
+    let session = sessionArg;
+    let ownsSession = false;
+
     try {
-      session = await this.connection.startSession();
-      session.startTransaction();
+      if (!session) {
+        session = await this.connection.startSession();
+        session.startTransaction();
+        ownsSession = true;
+      }
 
       const riddle = await this.riddleService.findOne(riddleId, session);
       if (!riddle) {
         this.logger.warn(`Riddle with ID ${riddleId} not found. Cannot update prize pool.`);
-        await session.abortTransaction();
+        if (ownsSession) {
+          await session.abortTransaction();
+        }
         return;
       }
 
@@ -147,7 +154,8 @@ export class RiddleManagerService implements OnModuleInit {
         { session },
       );
 
-      const newPrizePool = totalGuesses * riddle.entryFee;
+      const entryFee = Number(riddle.entryFee?.toString() ?? 0); // Harden arithmetic: default entryFee to 0 when missing
+      const newPrizePool = new Decimal128((totalGuesses * entryFee).toString());
 
       const updatedRiddle = await this.riddleService.updateRiddleMetadata(
         riddleId,
@@ -157,27 +165,31 @@ export class RiddleManagerService implements OnModuleInit {
 
       if (!updatedRiddle) {
         this.logger.error(
-          `Failed to update prize pool for riddle ${riddleId}. Aborting transaction.`,
+          `Failed to update prize pool for riddle ${riddleId}. Aborting transaction.`
         );
-        await session.abortTransaction();
+        if (ownsSession) {
+          await session.abortTransaction();
+        }
         return;
       }
 
-      await session.commitTransaction();
+      if (ownsSession) {
+        await session.commitTransaction();
+      }
       this.logger.log(
-        `Successfully updated prize pool for riddle ${riddleId} to ${newPrizePool}.`,
+        `Successfully updated prize pool for riddle ${riddleId} to ${newPrizePool}.`
       );
     } catch (error) {
-      if (session) {
+      if (ownsSession && session) {
         await session.abortTransaction();
         this.logger.error('Transaction aborted during prize pool update.');
       }
       this.logger.error(
         `Error updating prize pool for riddle ${riddleId}: ${error.message}`,
-        error.stack,
+        error.stack
       );
     } finally {
-      if (session) {
+      if (ownsSession && session) {
         await session.endSession();
       }
     }

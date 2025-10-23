@@ -74,9 +74,10 @@
       "ts"
     ],
     "rootDir": ".",
-    "testRegex": "src/.*\\.spec\\.ts$",
+    "preset": "ts-jest",
+    "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": "<rootDir>/node_modules/ts-jest"
     },
     "collectCoverageFrom": [
       "src/**/*.(t|j)s"

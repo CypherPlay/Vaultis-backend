@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ClientSession, Decimal128, Model } from 'mongoose';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
 
 export class UpdateRiddleDto {
   expiresAt?: Date;
   lastUsedAt?: Date;
-  prizePool?: number;
+  prizePool?: Decimal128;
 }
 
 @Injectable()
@@ -23,8 +23,8 @@ export class RiddleService {
       .exec();
   }
 
-  async findOne(id: string, session: any = null): Promise<RiddleDocument | null> {
-    return this.riddleModel.findById(id, { session }).exec();
+  async findOne(id: string, session?: ClientSession): Promise<RiddleDocument | null> {
+    return this.riddleModel.findById(id, null, { session }).exec();
   }
 
   async findAll(page = 1, limit = 100): Promise<RiddleDocument[]> {
