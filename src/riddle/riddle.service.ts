@@ -48,4 +48,13 @@ export class RiddleService {
       return this.riddleModel.findOne(filter, { answer: 0 }).exec();
     }
   }
+
+  async updateRiddle(
+    id: string,
+    update: Partial<Riddle>,
+  ): Promise<Riddle | null> {
+    return this.riddleModel
+      .findByIdAndUpdate(id, update, { new: true })
+      .exec();
+  }
 }

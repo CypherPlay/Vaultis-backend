@@ -26,15 +26,36 @@ export class RiddleManagerService implements OnModuleInit {
   }
 
   async rotateRiddle(): Promise<void> {
-    const riddle = await this.riddleService.findOneEligibleRiddle();
-    if (riddle) {
-      this.activeRiddle = riddle;
-      if (this.activeRiddle) {
-        this.logger.log(`Active riddle set to: ${(this.activeRiddle as RiddleDocument)._id}`);
-      }
+    this.logger.log('Attempting to rotate riddle...');
+
+    // Expire the current riddle if one exists
+    if (this.activeRiddle) {
+      const now = new Date();
+      // Ensure activeRiddle is a RiddleDocument to access _id
+      const activeRiddleDoc = this.activeRiddle as RiddleDocument;
+      await this.riddleService.updateRiddle(activeRiddleDoc._id, {
+        expiresAt: now,
+      });
+      this.logger.log(`Expired previous riddle: ${activeRiddleDoc._id}`);
+      this.activeRiddle = null; // Clear active riddle after expiring
+    }
+
+    // Find and activate a new eligible riddle
+    const newRiddle = await this.riddleService.findOneEligibleRiddle();
+
+    if (newRiddle) {
+      const expiresAt = new Date();
+      expiresAt.setUTCDate(expiresAt.getUTCDate() + 1); // Set expiration for 24 hours from now
+
+      const newRiddleDoc = newRiddle as RiddleDocument;
+      await this.riddleService.updateRiddle(newRiddleDoc._id, {
+        expiresAt: expiresAt,
+      });
+      this.activeRiddle = newRiddle;
+      this.logger.log(`Activated new riddle: ${newRiddleDoc._id}. Expires at: ${expiresAt.toISOString()}`);
     } else {
       this.activeRiddle = null;
-      this.logger.warn('No riddles found to rotate.');
+      this.logger.warn('No eligible riddles found to activate.');
     }
   }
 
