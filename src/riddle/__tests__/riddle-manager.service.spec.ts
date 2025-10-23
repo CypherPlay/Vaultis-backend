@@ -90,11 +90,15 @@ describe('RiddleManagerService', () => {
     connection = module.get<Connection>(Connection);
     riddleModel = module.get<Model<RiddleDocument>>(getModelToken('Riddle'));
 
-    jest.spyOn(service as any, 'logger').mockImplementation(() => ({ // Mock the logger
+    (service as any).logger = { // Mock the logger
       log: jest.fn(),
       warn: jest.fn(),
       error: jest.fn(),
-    }));
+    };
+  });
+
+  afterEach(() => {
+    jest.resetAllMocks();
   });
 
   it('should be defined', () => {
