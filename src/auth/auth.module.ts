@@ -5,6 +5,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
 import { RedisModule } from '../database/redis.module';
+import { AuthController } from './auth.controller';
+import { MongooseModule } from '@nestjs/mongoose';
+import { User, UserSchema } from '../schemas/user.schema';
 
 @Module({
   imports: [
@@ -19,7 +22,9 @@ import { RedisModule } from '../database/redis.module';
       inject: [ConfigService],
     }),
     RedisModule, // Import RedisModule
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
+  controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
   exports: [AuthService, JwtModule, PassportModule],
 })
