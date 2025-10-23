@@ -23,6 +23,9 @@ export class Riddle {
 
   @Prop({ required: true })
   expiresAt: Date;
+
+  @Prop({ default: null })
+  lastUsedAt: Date;
 }
 
 export const RiddleSchema = SchemaFactory.createForClass(Riddle);
