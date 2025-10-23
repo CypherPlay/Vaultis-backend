@@ -26,10 +26,9 @@ export class RiddleManagerService implements OnModuleInit {
   }
 
   async rotateRiddle(): Promise<void> {
-    const riddles = await this.riddleService.findAll();
-    if (riddles.length > 0) {
-      const randomIndex = Math.floor(Math.random() * riddles.length);
-      this.activeRiddle = riddles[randomIndex];
+    const riddle = await this.riddleService.findOneEligibleRiddle();
+    if (riddle) {
+      this.activeRiddle = riddle;
       if (this.activeRiddle) {
         this.logger.log(`Active riddle set to: ${(this.activeRiddle as RiddleDocument)._id}`);
       }
