@@ -3,7 +3,7 @@ import { RiddleManagerService } from '../riddle-manager.service';
 import { RiddleService } from '../riddle.service';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { RiddleDocument } from '../../schemas/riddle.schema';
-import { ClientSession, Connection, Decimal128, Model, Query } from 'mongoose';
+import mongoose, { ClientSession, Connection, Model, Query, Types } from 'mongoose';
 import { getModelToken } from '@nestjs/mongoose';
 import { GuessDocument } from '../../schemas/guess.schema';
 
@@ -18,8 +18,7 @@ describe('RiddleManagerService', () => {
     _id: '654321098765432109876543',
     question: 'Test Question',
     answerHash: 'hashedAnswer',
-    entryFee: new Decimal128('10'),
-    prizePool: new Decimal128('100'),
+            entryFee: Types.Decimal128.fromString('10'),    prizePool: Types.Decimal128.fromString('100'),
     createdAt: new Date(),
     expiresAt: new Date(Date.now() + 3600000),
     lastUsedAt: null,

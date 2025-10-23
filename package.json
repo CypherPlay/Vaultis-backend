@@ -74,7 +74,7 @@
       "ts"
     ],
     "rootDir": ".",
-    "preset": "ts-jest",
+    "preset": "ts-jest/presets/default",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "<rootDir>/node_modules/ts-jest"
@@ -83,6 +83,11 @@
       "src/**/*.(t|j)s"
     ],
     "coverageDirectory": "./coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "globals": {
+      "ts-jest": {
+        "tsconfig": "tsconfig.json"
+      }
+    }
   }
 }
