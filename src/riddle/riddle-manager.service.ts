@@ -5,6 +5,7 @@ import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
 import { Guess, GuessDocument } from '../schemas/guess.schema';
 import { ClientSession, Connection, Model, Types } from 'mongoose';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Decimal } from 'decimal.js';
 
 function isRiddleDocument(riddle: Riddle | RiddleDocument): riddle is RiddleDocument {
   return riddle && (riddle as RiddleDocument)._id !== undefined;
@@ -102,7 +103,7 @@ export class RiddleManagerService implements OnModuleInit {
 
       await session.commitTransaction();
       this.activeRiddle = updatedNewRiddle;
-      await this.updatePrizePool(this.activeRiddle._id!.toString(), session);
+      await this.updatePrizePool(this.activeRiddle._id!.toString());
       this.logger.log(
         `Activated new riddle: ${this.activeRiddle._id}. Expires at: ${this.activeRiddle.expiresAt.toISOString()}.`,
       );
@@ -154,8 +155,10 @@ export class RiddleManagerService implements OnModuleInit {
         { session },
       );
 
-      const entryFee = Number(riddle.entryFee?.toString() ?? 0); // Harden arithmetic: default entryFee to 0 when missing
-      const newPrizePool = Types.Decimal128.fromString((totalGuesses * entryFee).toString());
+      const entryFeeDecimal = new Decimal(riddle.entryFee?.toString() ?? '0');
+      const totalGuessesDecimal = new Decimal(totalGuesses.toString());
+      const newPrizePoolDecimal = entryFeeDecimal.times(totalGuessesDecimal);
+      const newPrizePool = Types.Decimal128.fromString(newPrizePoolDecimal.toString());
 
       const updatedRiddle = await this.riddleService.updateRiddleMetadata(
         riddleId,

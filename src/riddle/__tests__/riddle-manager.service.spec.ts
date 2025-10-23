@@ -178,7 +178,7 @@ describe('RiddleManagerService', () => {
       );
       expect(riddleService.updateRiddleMetadata).toHaveBeenCalledWith(
         mockRiddle._id.toString(),
-        { prizePool: new Decimal128((5 * Number(mockRiddle.entryFee.toString())).toString()) },
+        { prizePool: Types.Decimal128.fromString((5 * Number(mockRiddle.entryFee.toString())).toString()) },
         session,
       );
       expect(riddleService.findOne).toHaveBeenCalledWith(mockRiddle2._id.toString(), session);
@@ -188,7 +188,7 @@ describe('RiddleManagerService', () => {
       );
       expect(riddleService.updateRiddleMetadata).toHaveBeenCalledWith(
         mockRiddle2._id.toString(),
-        { prizePool: new Decimal128((5 * Number(mockRiddle2.entryFee.toString())).toString()) },
+        { prizePool: Types.Decimal128.fromString((5 * Number(mockRiddle2.entryFee.toString())).toString()) },
         session,
       );
     });
