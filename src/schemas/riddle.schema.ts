@@ -1,6 +1,7 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Decimal128, Types } from 'mongoose';
+import { Guess } from './guess.schema';
 
 export type RiddleDocument = Riddle & Document;
 
@@ -26,6 +27,9 @@ export class Riddle {
 
   @Prop({ default: null })
   lastUsedAt: Date;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Guess' }] })
+  guesses: Types.Array<Guess>;
 }
 
 export const RiddleSchema = SchemaFactory.createForClass(Riddle);

@@ -1,5 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
+import { Guess } from './guess.schema';
+import { LeaderboardEntry } from './leaderboard-entry.schema';
 
 export type UserDocument = User & Document;
 
@@ -13,6 +15,12 @@ export class User {
 
   @Prop({ required: true, unique: true })
   email: string;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Guess' }] })
+  guesses: Types.Array<Guess>;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'LeaderboardEntry' }] })
+  leaderboardEntries: Types.Array<LeaderboardEntry>;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
