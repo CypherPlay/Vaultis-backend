@@ -51,6 +51,7 @@ async function seed() {
         const answerHash = await bcrypt.hash(riddle.answer, saltRounds);
         await riddleModel.create({
           question: riddle.question,
+          answer: riddle.answer,
           answerHash,
           entryFee: validateAndConvertDecimal(riddle.entryFee, riddle.question, 'entryFee'),
           prizePool: validateAndConvertDecimal(riddle.prizePool, riddle.question, 'prizePool'),

@@ -7,13 +7,16 @@ export type RiddleDocument = Riddle & Document;
 
 @Schema()
 export class Riddle {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true, trim: true })
+  question: string;
+
+  @Prop({ required: true, select: false, trim: true, minlength: 1 })
   answer: string;
 
   @Prop({ default: false })
   seeded: boolean;
 
-  @Prop({ required: true })
+  @Prop({ required: true, select: false })
   answerHash: string;
 
   @Prop({ required: true, type: Types.Decimal128 })
