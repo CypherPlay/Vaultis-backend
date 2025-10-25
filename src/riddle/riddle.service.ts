@@ -6,7 +6,7 @@ import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
 export class UpdateRiddleDto {
   expiresAt?: Date;
   lastUsedAt?: Date;
-  prizePool?: Decimal128;
+  prizePool?: Types.Decimal128;
 }
 
 @Injectable()

@@ -3,16 +3,16 @@ import { AppModule } from '../../app.module';
 import { Riddle, RiddleDocument } from '../../schemas/riddle.schema';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { Decimal128 } from 'mongoose';
+import { Types } from 'mongoose';
 import { getModelToken } from '@nestjs/mongoose';
 
-function validateAndConvertDecimal(value: string, riddleQuestion: string, fieldName: string): Decimal128 {
+function validateAndConvertDecimal(value: string, riddleQuestion: string, fieldName: string): Types.Decimal128 {
   const trimmedValue = value.trim();
   const numericPattern = /^\d+(?:\.\d+)?$/;
   if (!trimmedValue || !numericPattern.test(trimmedValue)) {
     throw new Error(`Invalid ${fieldName} format for riddle "${riddleQuestion}": "${value}". Must be a non-empty numeric string.`);
   }
-  return Decimal128.fromString(trimmedValue);
+  return Types.Decimal128.fromString(trimmedValue);
 }
 
 async function seed() {
@@ -70,7 +70,7 @@ async function seed() {
 }
 
 async function unseed() {
-  if (process.env.NODE_ENV !== 'development' && !process.env.ALLOW_DB_SEED) {
+  if (process.env.NODE_ENV !== 'development' && process.env.ALLOW_DB_SEED !== 'true') {
     throw new Error('Refusing to run unseed in non-development environment. Set NODE_ENV=development or ALLOW_DB_SEED=true to proceed.');
   }
 
