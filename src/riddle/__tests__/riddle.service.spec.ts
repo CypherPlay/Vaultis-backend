@@ -11,7 +11,6 @@ describe('RiddleService', () => {
   const mockRiddle: RiddleDocument = {
     _id: '654321098765432109876543',
     question: 'Test Question',
-    answerHash: 'hashedAnswer',
     entryFee: 10,
     prizePool: 100,
     createdAt: new Date(),
@@ -19,10 +18,15 @@ describe('RiddleService', () => {
     lastUsedAt: null,
   } as RiddleDocument;
 
+  const mockRiddleWithSensitive: RiddleDocument = {
+    ...mockRiddle,
+    answer: 'Test Answer',
+    answerHash: 'hashedAnswer',
+  } as RiddleDocument;
+
   const mockRiddle2: RiddleDocument = {
     _id: '123456789012345678901234',
     question: 'Test Question 2',
-    answerHash: 'hashedAnswer2',
     entryFee: 20,
     prizePool: 200,
     createdAt: new Date(),
@@ -33,7 +37,6 @@ describe('RiddleService', () => {
   const mockRiddle3: RiddleDocument = {
     _id: 'abcdefabcdefabcdefabcdef',
     question: 'Test Question 3',
-    answerHash: 'hashedAnswer3',
     entryFee: 30,
     prizePool: 300,
     createdAt: new Date(),
@@ -65,6 +68,61 @@ describe('RiddleService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('findOne', () => {
+    it('should return a riddle by ID without sensitive fields by default', async () => {
+      jest.spyOn(model, 'findById').mockReturnValue({ exec: jest.fn().mockResolvedValue(mockRiddle) } as any);
+
+      const result = await service.findOne(mockRiddle._id.toString());
+      expect(result).toEqual(mockRiddle);
+      // Verify that sensitive fields are not present (due to select: false in schema)
+      expect(result.answer).toBeUndefined();
+      expect(result.answerHash).toBeUndefined();
+    });
+
+    it('should return null if riddle is not found', async () => {
+      jest.spyOn(model, 'findById').mockReturnValue({ exec: jest.fn().mockResolvedValue(null) } as any);
+
+      const result = await service.findOne('nonexistentId');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return a riddle by ID without sensitive fields by default', async () => {
+      jest.spyOn(model, 'findById').mockReturnValue({ exec: jest.fn().mockResolvedValue(mockRiddleWithSensitive) } as any);
+
+      const result = await service.findOne(mockRiddle._id.toString());
+      expect(result).toEqual(mockRiddleWithSensitive);
+      // Verify that sensitive fields are not present (due to select: false in schema)
+      expect(result.answer).toBeUndefined();
+      expect(result.answerHash).toBeUndefined();
+    });
+
+    it('should return null if riddle is not found', async () => {
+      jest.spyOn(model, 'findById').mockReturnValue({ exec: jest.fn().mockResolvedValue(null) } as any);
+
+      const result = await service.findOne('nonexistentId');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return all riddles without sensitive fields by default', async () => {
+      jest.spyOn(model, 'find').mockReturnValue({
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([mockRiddleWithSensitive, mockRiddle2]),
+      } as any);
+
+      const result = await service.findAll();
+      expect(result).toEqual([mockRiddleWithSensitive, mockRiddle2]);
+      expect(result[0].answer).toBeUndefined();
+      expect(result[0].answerHash).toBeUndefined();
+      expect(result[1].answer).toBeUndefined();
+      expect(result[1].answerHash).toBeUndefined();
+    });
   });
 
   describe('findOneEligibleRiddle', () => {

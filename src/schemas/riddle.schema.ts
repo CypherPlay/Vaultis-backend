@@ -7,17 +7,23 @@ export type RiddleDocument = Riddle & Document;
 
 @Schema()
 export class Riddle {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true, trim: true })
   question: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, select: false, trim: true, minlength: 1 })
+  answer: string;
+
+  @Prop({ default: false })
+  seeded: boolean;
+
+  @Prop({ required: true, select: false })
   answerHash: string;
 
-  @Prop({ required: true, type: Decimal128 })
-  entryFee: Decimal128;
+  @Prop({ required: true, type: Types.Decimal128 })
+  entryFee: Types.Decimal128;
 
-  @Prop({ required: true, type: Decimal128 })
-  prizePool: Decimal128;
+  @Prop({ required: true, type: Types.Decimal128 })
+  prizePool: Types.Decimal128;
 
   @Prop({ default: Date.now })
   createdAt: Date;

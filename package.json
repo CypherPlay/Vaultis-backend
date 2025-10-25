@@ -17,10 +17,13 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "seed": "ts-node src/database/seeds/riddles.seed.ts --seed",
+    "unseed": "ts-node src/database/seeds/riddles.seed.ts --unseed"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
+    "bcrypt": "^5.1.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.1",
@@ -68,15 +71,5 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.46.2"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "testRegex": ".*\\.spec\\.ts$",
-    "testEnvironment": "node"
-  }
   }
 }
