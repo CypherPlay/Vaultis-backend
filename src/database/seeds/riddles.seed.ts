@@ -6,6 +6,15 @@ import * as bcrypt from 'bcrypt';
 import { Decimal128 } from 'mongoose';
 import { getModelToken } from '@nestjs/mongoose';
 
+function validateAndConvertDecimal(value: string, riddleQuestion: string, fieldName: string): Decimal128 {
+  const trimmedValue = value.trim();
+  const numericPattern = /^\d+(?:\.\d+)?$/;
+  if (!trimmedValue || !numericPattern.test(trimmedValue)) {
+    throw new Error(`Invalid ${fieldName} format for riddle "${riddleQuestion}": "${value}". Must be a non-empty numeric string.`);
+  }
+  return Decimal128.fromString(trimmedValue);
+}
+
 async function seed() {
   const app = await NestFactory.create(AppModule);
 
@@ -30,30 +39,50 @@ async function seed() {
     },
   ];
 
-  for (const riddle of riddlesData) {
-    const answerHash = await bcrypt.hash(riddle.answer, saltRounds);
-    await riddleModel.create({
-      question: riddle.question,
-      answerHash,
-      entryFee: Decimal128.fromString(riddle.entryFee),
-      prizePool: Decimal128.fromString(riddle.prizePool),
-      expiresAt: riddle.expiresAt,
-    });
+  try {
+    for (const riddle of riddlesData) {
+      try {
+        const existingRiddle = await riddleModel.findOne({ question: riddle.question });
+        if (existingRiddle) {
+          console.info(`Riddle already exists: "${riddle.question}" - skipping`);
+          continue;
+        }
+
+        const answerHash = await bcrypt.hash(riddle.answer, saltRounds);
+        await riddleModel.create({
+          question: riddle.question,
+          answerHash,
+          entryFee: validateAndConvertDecimal(riddle.entryFee, riddle.question, 'entryFee'),
+          prizePool: validateAndConvertDecimal(riddle.prizePool, riddle.question, 'prizePool'),
+          expiresAt: riddle.expiresAt,
+          seeded: true,
+        });
+        console.info(`Successfully seeded riddle: "${riddle.question}"`);
+      } catch (error) {
+        console.error(`Failed to seed riddle "${riddle.question}":`, error.message);
+      }
+    }
+
+    console.info('Riddles seeding process completed.');
+  } finally {
+    await app.close();
   }
-
-  console.log('Riddles seeded!');
-
-  await app.close();
 }
 
 async function unseed() {
+  if (process.env.NODE_ENV !== 'development' && !process.env.ALLOW_DB_SEED) {
+    throw new Error('Refusing to run unseed in non-development environment. Set NODE_ENV=development or ALLOW_DB_SEED=true to proceed.');
+  }
+
   const app = await NestFactory.create(AppModule);
-  const riddleModel: Model<RiddleDocument> = app.get(getModelToken(Riddle.name));
+  try {
+    const riddleModel: Model<RiddleDocument> = app.get(getModelToken(Riddle.name));
 
-  await riddleModel.deleteMany({});
-  console.log('Riddles unseeded!');
-
-  await app.close();
+    const result = await riddleModel.deleteMany({ seeded: true });
+    console.info(`Deleted ${result.deletedCount} seeded riddles.`);
+  } finally {
+    await app.close();
+  }
 }
 
 // Execute seed or unseed based on command line arguments
