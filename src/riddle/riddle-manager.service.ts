@@ -201,4 +201,15 @@ export class RiddleManagerService implements OnModuleInit {
   getActiveRiddle(): RiddleDocument | null {
     return this.activeRiddle;
   }
+
+  /**
+   * Checks if the current active riddle has expired.
+   * @returns True if the riddle is expired or not set, false otherwise.
+   */
+  isRiddleExpired(): boolean {
+    if (!this.activeRiddle || !this.activeRiddle.expiresAt) {
+      return true; // No active riddle or no expiration date means it's "expired" for new guesses
+    }
+    return new Date() > this.activeRiddle.expiresAt;
+  }
 }

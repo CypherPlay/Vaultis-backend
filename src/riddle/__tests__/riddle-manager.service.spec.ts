@@ -245,5 +245,27 @@ describe('RiddleManagerService', () => {
 
       expect(rotateRiddleSpy).toHaveBeenCalled();
     });
+  describe('isRiddleExpired', () => {
+    it('should return true if no active riddle is set', () => {
+      (service as any).activeRiddle = null;
+      expect(service.isRiddleExpired()).toBe(true);
+    });
+
+    it('should return false if the active riddle has not expired yet', () => {
+      const futureDate = new Date(Date.now() + 1000 * 60 * 60); // 1 hour in the future
+      (service as any).activeRiddle = { ...mockRiddle, expiresAt: futureDate };
+      expect(service.isRiddleExpired()).toBe(false);
+    });
+
+    it('should return true if the active riddle has expired', () => {
+      const pastDate = new Date(Date.now() - 1000 * 60 * 60); // 1 hour in the past
+      (service as any).activeRiddle = { ...mockRiddle, expiresAt: pastDate };
+      expect(service.isRiddleExpired()).toBe(true);
+    });
+
+    it('should return true if activeRiddle has no expiresAt', () => {
+      (service as any).activeRiddle = { ...mockRiddle, expiresAt: undefined };
+      expect(service.isRiddleExpired()).toBe(true);
+    });
   });
 });
