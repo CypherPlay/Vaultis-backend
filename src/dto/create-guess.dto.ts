@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsMongoId, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateGuessDto {
@@ -6,12 +6,12 @@ export class CreateGuessDto {
     description: 'The ID of the riddle being guessed',
     example: '654321098765432109876543',
   })
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
   riddleId: string;
 
   @ApiProperty({
-    description: 'The user's guess for the riddle',
+    description: 'The guess provided by the user for the riddle',
     example: 'My guess is...',
   })
   @IsString()
