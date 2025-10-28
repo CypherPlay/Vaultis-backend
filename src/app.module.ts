@@ -6,6 +6,7 @@ import { DatabaseModule } from './database/database.module';
 import { RiddleModule } from './riddle/riddle.module';
 import { GuessModule } from './guess/guess.module';
 import { AuthModule } from './auth/auth.module';
+import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 
