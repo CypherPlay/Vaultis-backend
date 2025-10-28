@@ -17,6 +17,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     RiddleModule,
     GuessModule,
     AuthModule,
+    LeaderboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
