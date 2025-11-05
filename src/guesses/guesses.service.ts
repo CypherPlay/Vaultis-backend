@@ -7,7 +7,7 @@ export class GuessesService {
     // TODO: Implement the actual guess submission logic here.
     // This will involve interacting with the database, verifying the guess,
     // updating user scores, and potentially handling blockchain interactions.
-    console.log(`User ${userId} (${walletAddress}) submitted guess: ${submitGuessDto.guess} for riddle ${submitGuessDto.riddleId}`);
+    console.log(`Guess submitted for riddle ${submitGuessDto.riddleId}`);
     return { message: 'Guess submitted successfully (service placeholder)' };
   }
 }
