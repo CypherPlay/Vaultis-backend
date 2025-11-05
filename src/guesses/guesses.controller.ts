@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { GuessesService } from './guesses.service';
 import { SubmitGuessDto } from './dto/submit-guess.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -10,14 +10,17 @@ export class GuessesController {
   @UseGuards(JwtAuthGuard)
   @Post('submit')
   async submitGuess(@Request() req, @Body() submitGuessDto: SubmitGuessDto) {
-    // req.user contains the authenticated user's information (from JWT payload)
-    // You can access user's wallet information from req.user if it's included in the JWT payload
-    const userId = req.user.userId;
-    const walletAddress = req.user.walletAddress; // Assuming walletAddress is in JWT payload
+    const userId = req.user?.userId;
+    const walletAddress = req.user?.walletAddress;
 
-    // Here you would implement the logic to process the guess,
-    // verify it against the riddle, and update user's score/wallet.
-    // This will involve interacting with GuessesService and potentially RiddleService.
+    if (!userId || typeof userId !== 'string') {
+      throw new BadRequestException('Invalid authentication payload: missing or invalid userId');
+    }
+    if (!walletAddress || typeof walletAddress !== 'string') {
+      throw new BadRequestException('Invalid authentication payload: missing or invalid walletAddress');
+    }
+
+    // proceed to call service with validated values
     return this.guessesService.submitGuess(userId, walletAddress, submitGuessDto);
   }
 }
