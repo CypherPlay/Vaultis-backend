@@ -1,10 +1,11 @@
+import { GuessesModule } from './guesses/guesses.module';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DatabaseModule } from './database/database.module';
 import { RiddleModule } from './riddle/riddle.module';
-import { GuessModule } from './guess/guess.module';
+
 import { AuthModule } from './auth/auth.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { ConfigModule } from '@nestjs/config';
@@ -16,9 +17,10 @@ import { ScheduleModule } from '@nestjs/schedule';
     ScheduleModule.forRoot(),
     DatabaseModule,
     RiddleModule,
-    GuessModule,
+
     AuthModule,
     LeaderboardModule,
+    GuessesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
