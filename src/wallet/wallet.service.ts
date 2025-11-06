@@ -9,7 +9,7 @@ export class WalletService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
-  async deductEntryFee(userId: string, entryFee: number, session?: ClientSession): Promise<void> {
+  async deductEntryFee(userId: string, entryFee: number, session: ClientSession): Promise<void> {
     const user = await this.userModel.findById(userId).session(session || null).exec();
     if (!user) {
       throw new BadRequestException('User not found.');
