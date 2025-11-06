@@ -21,6 +21,12 @@ export class User {
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'LeaderboardEntry' }] })
   leaderboardEntries: Types.Array<LeaderboardEntry>;
+
+  @Prop({ default: 0 })
+  balance: number;
+
+  @Prop({ default: 0 })
+  retryTokens: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
