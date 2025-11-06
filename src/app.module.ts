@@ -5,23 +5,10 @@ import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DatabaseModule } from './database/database.module';
 import { RiddleModule } from './riddle/riddle.module';
-
-import { AuthModule } from './auth/auth.module';
-import { LeaderboardModule } from './leaderboard/leaderboard.module';
-import { ConfigModule } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
+import { WalletModule } from './wallet/wallet.module';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    ScheduleModule.forRoot(),
-    DatabaseModule,
-    RiddleModule,
-
-    AuthModule,
-    LeaderboardModule,
-    GuessesModule,
-  ],
+  imports: [AuthModule, DatabaseModule, GuessesModule, LeaderboardModule, RiddleModule, WalletModule],
   controllers: [AppController],
   providers: [AppService],
 })
