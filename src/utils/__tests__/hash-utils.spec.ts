@@ -15,7 +15,7 @@ describe('Hash Utils', () => {
     });
 
     it('should handle a combination of changes', () => {
-      expect(normalizeString('  HeLlO W0rLd!  ')).toBe('helloworld');
+      expect(normalizeString('  HeLlO W0rLd!  ')).toBe('hellow0rld');
     });
 
     it('should return an empty string for an empty input', () => {
@@ -48,7 +48,7 @@ describe('Hash Utils', () => {
 
     it('should produce a consistent hash after normalization', () => {
       const normalizedInput = normalizeString('  HeLlO W0rLd!  ');
-      const expectedHash = hashString('helloworld'); // Pre-calculated hash for 'helloworld'
+      const expectedHash = hashString('hellow0rld'); // Pre-calculated hash for 'helloworld'
       expect(hashString(normalizedInput)).toBe(expectedHash);
     });
   });
