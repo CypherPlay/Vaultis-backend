@@ -8,9 +8,10 @@ import { RiddleModule } from './riddle/riddle.module';
 import { WalletModule } from './wallet/wallet.module';
 import { AuthModule } from './auth/auth.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
+import { GameModule } from './game/game.module';
 
 @Module({
-  imports: [AuthModule, DatabaseModule, GuessesModule, LeaderboardModule, RiddleModule, WalletModule],
+  imports: [AuthModule, DatabaseModule, GameModule, GuessesModule, LeaderboardModule, RiddleModule, WalletModule],
   controllers: [AppController],
   providers: [AppService],
 })
