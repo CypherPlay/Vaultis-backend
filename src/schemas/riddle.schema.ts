@@ -36,6 +36,12 @@ export class Riddle {
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Guess' }] })
   guesses: Types.Array<Guess>;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', default: null })
+  winnerId: Types.ObjectId;
+
+  @Prop({ type: String, enum: ['active', 'solved', 'expired'], default: 'active' })
+  status: string;
 }
 
 export const RiddleSchema = SchemaFactory.createForClass(Riddle);

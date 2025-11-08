@@ -26,7 +26,10 @@ export class User {
   balance: number;
 
   @Prop({ default: 0 })
-  retryTokens: number;
+  retryTokens;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Riddle' }], default: [] })
+  solvedRiddles: Types.Array<Types.ObjectId>;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
