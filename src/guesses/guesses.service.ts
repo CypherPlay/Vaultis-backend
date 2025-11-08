@@ -16,6 +16,10 @@ export class GuessesService {
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
+  private normalizeString(str: string): string {
+    return str.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '').trim();
+  }
+
   async submitGuess(userId: string, walletAddress: string, submitGuessDto: SubmitGuessDto) {
     const { riddleId, guess } = submitGuessDto;
 
@@ -24,7 +28,7 @@ export class GuessesService {
 
     try {
       // 1. Fetch riddle and its entry fee
-      const riddle = await this.riddleModel.findById(riddleId).session(session).exec();
+      const riddle = await this.riddleModel.findById(riddleId).select('+answer').session(session).exec();
       if (!riddle) {
         throw new BadRequestException('Riddle not found.');
       }
@@ -33,11 +37,15 @@ export class GuessesService {
       await this.walletService.deductEntryFee(userId, parseFloat(riddle.entryFee.toString()), session);
 
       // 3. Create a new Guess entity
+      const normalizedGuess = this.normalizeString(guess);
+      const normalizedAnswer = this.normalizeString(riddle.answer);
+      const isCorrect = normalizedGuess === normalizedAnswer;
+
       const newGuess = new this.guessModel({
         userId,
         riddleId,
-        guessText: guess, // Assuming 'guess' from submitGuessDto is the guessText
-        isCorrect: false, // Placeholder, actual correctness check to be implemented
+        guessText: guess,
+        isCorrect,
       });
       await newGuess.save({ session });
 
