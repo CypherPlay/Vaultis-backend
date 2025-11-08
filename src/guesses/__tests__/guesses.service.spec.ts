@@ -120,6 +120,7 @@ describe('GuessesService', () => {
     };
 
     beforeEach(() => {
+      mockRiddle.status = 'active'; // Reset riddle status for each test
       mockRiddleModel.findById.mockReturnThis();
       mockRiddleModel.select.mockReturnThis();
       mockRiddleModel.session.mockReturnThis();
