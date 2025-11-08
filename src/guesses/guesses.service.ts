@@ -36,8 +36,8 @@ export class GuessesService {
       const newGuess = new this.guessModel({
         userId,
         riddleId,
-        guess,
-        timestamp: new Date(),
+        guessText: guess, // Assuming 'guess' from submitGuessDto is the guessText
+        isCorrect: false, // Placeholder, actual correctness check to be implemented
       });
       await newGuess.save({ session });
 
