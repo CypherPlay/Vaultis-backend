@@ -57,16 +57,22 @@ export class GuessesService {
 
       if (isCorrect) {
         // Mark riddle as solved and assign winner
-        await this.riddleModel.updateOne(
+        const riddleUpdate = await this.riddleModel.updateOne(
           { _id: riddleId, status: 'active' },
           { $set: { winnerId: new Types.ObjectId(userId), status: 'solved' } },
           { session }
         ).exec();
 
+        if (riddleUpdate.modifiedCount === 0) {
+          await session.abortTransaction();
+          throw new BadRequestException('Riddle has already been solved.');
+        }
+
         // Award prize to the user
+        const prizeAmount = parseFloat(riddle.prizePool.toString());
         await this.userModel.updateOne(
           { _id: userId },
-          { $inc: { balance: riddle.prizePool.valueOf() }, $push: { solvedRiddles: riddleId } },
+          { $inc: { balance: prizeAmount }, $push: { solvedRiddles: riddleId } },
           { session }
         ).exec();
 

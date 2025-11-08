@@ -84,18 +84,12 @@ describe('GuessesService', () => {
     connection = module.get<Connection>('DbConnection');
 
     // Mock the constructor of Guess model to return the mockGuessModel
-    jest.spyOn(service as any, 'guessModel', 'get').mockReturnValue({
-      ...mockGuessModel,
-      // Mock the constructor behavior for `new this.guessModel(...)`
-      // This is a simplified mock, adjust if `save` is called directly on the instance
-      // For now, we assume `new this.guessModel({...}).save()` pattern
-      // If `new this.guessModel(...)` is called, it returns an object with a `save` method
-      // This mock ensures that `new this.guessModel({...}).save()` calls the mocked `save`
-      constructor: jest.fn().mockImplementation((data) => ({
+    jest.spyOn(service as any, 'guessModel', 'get').mockReturnValue(
+      jest.fn().mockImplementation((data) => ({
         ...data,
-        save: mockGuessModel.save.mockResolvedValue(data),
-      })),
-    });
+        save: jest.fn().mockResolvedValue(data), // Each instance has its own save method
+      })) as any
+    );
   });
 
   it('should be defined', () => {
@@ -127,8 +121,10 @@ describe('GuessesService', () => {
       mockRiddleModel.exec.mockResolvedValue(mockRiddle);
       mockWalletService.deductEntryFee.mockResolvedValue(undefined);
       mockGuessModel.save.mockResolvedValue(undefined);
-      mockRiddleModel.updateOne.mockResolvedValue({ nModified: 1 });
-      mockUserModel.updateOne.mockResolvedValue({ nModified: 1 });
+      mockRiddleModel.updateOne.mockReturnThis();
+      mockRiddleModel.exec.mockResolvedValue({ acknowledged: true, modifiedCount: 1 });
+      mockUserModel.updateOne.mockReturnThis();
+      mockUserModel.exec.mockResolvedValue({ nModified: 1 });
       mockConnection.startSession.mockResolvedValue(mockSession);
     });
 
