@@ -34,7 +34,8 @@ describe('GuessesService', () => {
   };
 
   const mockUserModel = {
-    updateOne: jest.fn(),
+    updateOne: jest.fn().mockReturnThis(),
+    exec: jest.fn(),
   };
 
   const mockSession = {
@@ -183,7 +184,7 @@ describe('GuessesService', () => {
       );
       expect(mockUserModel.updateOne).toHaveBeenCalledWith(
         { _id: userId },
-        { $inc: { balance: prizePool.valueOf() }, $push: { solvedRiddles: riddleId } },
+        { $inc: { balance: parseFloat(prizePool.toString()) }, $push: { solvedRiddles: riddleId } },
         { session: mockSession }
       );
       expect(mockSession.commitTransaction).toHaveBeenCalled();
