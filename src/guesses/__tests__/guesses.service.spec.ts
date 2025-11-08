@@ -85,10 +85,14 @@ describe('GuessesService', () => {
     connection = module.get<Connection>('DbConnection');
 
     // Mock the constructor of Guess model to return the mockGuessModel
+    const sharedSaveMock = jest.fn().mockResolvedValue(undefined);
+    mockGuessModel.save = sharedSaveMock;
+
+    // Mock the constructor of Guess model to return the mockGuessModel
     jest.spyOn(service as any, 'guessModel', 'get').mockReturnValue(
       jest.fn().mockImplementation((data) => ({
         ...data,
-        save: jest.fn().mockResolvedValue(data), // Each instance has its own save method
+        save: sharedSaveMock, // Each instance has its own save method
       })) as any
     );
   });
@@ -193,7 +197,7 @@ describe('GuessesService', () => {
 
     it('should abort transaction if an error occurs during winning logic', async () => {
       const submitGuessDto = { riddleId, guess: 'correct answer' };
-      mockUserModel.updateOne.mockRejectedValueOnce(new Error('Database error'));
+      mockUserModel.updateOne.mockReturnValueOnce({ exec: jest.fn().mockRejectedValueOnce(new Error('Database error')) });
 
       await expect(service.submitGuess(userId, walletAddress, submitGuessDto)).rejects.toThrow('Database error');
       expect(mockWalletService.deductEntryFee).toHaveBeenCalled();
