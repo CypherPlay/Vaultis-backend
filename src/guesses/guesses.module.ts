@@ -7,6 +7,7 @@ import { Guess, GuessSchema } from '../schemas/guess.schema';
 import { User, UserSchema } from '../schemas/user.schema';
 import { Riddle, RiddleSchema } from '../schemas/riddle.schema';
 import { WalletModule } from '../wallet/wallet.module';
+import { GuessesRepository } from './guesses.repository';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { WalletModule } from '../wallet/wallet.module';
     WalletModule,
   ],
   controllers: [GuessesController],
-  providers: [GuessesService],
+  providers: [GuessesService, GuessesRepository],
   exports: [GuessesService],
 })
 export class GuessesModule {}
