@@ -53,7 +53,7 @@ export class GuessesService {
         throw new BadRequestException('User not found.');
       }
 
-      const newGuess = await this.guessesRepository.createGuess(
+      await this.guessesRepository.createGuess(
         user,
         riddle,
         guess,
