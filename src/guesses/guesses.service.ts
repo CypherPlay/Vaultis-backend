@@ -4,18 +4,19 @@ import { WalletService } from '../wallet/wallet.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Connection, Types } from 'mongoose';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
-import { Guess, GuessDocument } from '../schemas/guess.schema';
+import { GuessDocument } from '../schemas/guess.schema';
 import { InjectConnection } from '@nestjs/mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
+import { GuessesRepository } from './guesses.repository';
 
 @Injectable()
 export class GuessesService {
   constructor(
     private readonly walletService: WalletService,
     @InjectModel(Riddle.name) private riddleModel: Model<RiddleDocument>,
-    @InjectModel(Guess.name) private guessModel: Model<GuessDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectConnection() private readonly connection: Connection,
+    private readonly guessesRepository: GuessesRepository,
   ) {}
 
   private normalizeString(str: string): string {
@@ -47,13 +48,17 @@ export class GuessesService {
       const normalizedAnswer = this.normalizeString(riddle.answer);
       const isCorrect = normalizedGuess === normalizedAnswer;
 
-      const newGuess = new this.guessModel({
-        userId,
-        riddleId,
-        guessText: guess,
+      const user = await this.userModel.findById(userId).session(session).exec();
+      if (!user) {
+        throw new BadRequestException('User not found.');
+      }
+
+      const newGuess = await this.guessesRepository.createGuess(
+        user,
+        riddle,
+        guess,
         isCorrect,
-      });
-      await newGuess.save({ session });
+      );
 
       if (isCorrect) {
         // Mark riddle as solved and assign winner
