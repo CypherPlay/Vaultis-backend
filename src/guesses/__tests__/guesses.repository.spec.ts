@@ -35,8 +35,9 @@ describe('GuessesRepository', () => {
         {
           provide: getModelToken(Guess.name),
           useValue: {
-            new: jest.fn().mockResolvedValue(mockGuess),
-            constructor: jest.fn().mockResolvedValue(mockGuess),
+            constructor: jest.fn().mockImplementation(() => ({
+              save: jest.fn().mockResolvedValue(mockGuess),
+            })),
             findOne: jest.fn(),
             findByIdAndUpdate: jest.fn(),
           },
@@ -54,7 +55,10 @@ describe('GuessesRepository', () => {
 
   describe('createGuess', () => {
     it('should create and return a new guess', async () => {
-      jest.spyOn(guessModel, 'create').mockResolvedValue(mockGuess as any);
+      const saveSpy = jest.fn().mockResolvedValue(mockGuess);
+      (guessModel.constructor as jest.Mock).mockImplementation(() => ({
+        save: saveSpy,
+      }));
 
       const result = await repository.createGuess(
         mockUser,
@@ -64,13 +68,14 @@ describe('GuessesRepository', () => {
       );
 
       expect(result).toEqual(mockGuess);
-      expect(guessModel.create).toHaveBeenCalledWith({
+      expect(guessModel.constructor).toHaveBeenCalledWith({
         user: mockUser._id,
         riddle: mockRiddle._id,
         guessText: 'test guess',
         isCorrect: true,
         timestamp: expect.any(Date),
       });
+      expect(saveSpy).toHaveBeenCalled();
     });
   });
 

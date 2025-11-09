@@ -4,7 +4,7 @@ import { WalletService } from '../wallet/wallet.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Connection, Types } from 'mongoose';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
-import { GuessDocument } from '../schemas/guess.schema';
+
 import { InjectConnection } from '@nestjs/mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
 import { GuessesRepository } from './guesses.repository';
@@ -58,6 +58,7 @@ export class GuessesService {
         riddle,
         guess,
         isCorrect,
+        session,
       );
 
       if (isCorrect) {

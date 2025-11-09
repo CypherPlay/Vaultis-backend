@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { Guess, GuessDocument } from '../schemas/guess.schema';
 import { UserDocument } from '../schemas/user.schema';
 import { RiddleDocument } from '../schemas/riddle.schema';
@@ -14,6 +14,7 @@ export class GuessesRepository {
     riddle: RiddleDocument,
     guessText: string,
     isCorrect: boolean,
+    session?: ClientSession,
   ): Promise<GuessDocument> {
     const newGuess = new this.guessModel({
       user: user._id,
@@ -22,7 +23,7 @@ export class GuessesRepository {
       isCorrect,
       timestamp: new Date(),
     });
-    return newGuess.save();
+    return newGuess.save({ session });
   }
 
   async findByUserAndRiddle(
