@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { Guess, GuessDocument } from '../schemas/guess.schema';
 import { User, UserDocument } from '../schemas/user.schema';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
+import { LeaderboardEntry } from '../schemas/leaderboard-entry.schema';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 
 @Injectable()

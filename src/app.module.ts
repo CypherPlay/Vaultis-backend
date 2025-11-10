@@ -9,7 +9,9 @@ import { AuthModule } from './auth/auth.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { GameModule } from './game/game.module';
 import { CacheModule, CacheInterceptor } from '@nestjs/cache-manager';
-import * as redisStore from 'cache-manager-ioredis';
+import Keyv from 'keyv';
+import KeyvRedis from '@keyv/redis';
+
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 
@@ -25,16 +27,17 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     ConfigModule.forRoot({ isGlobal: true }),
     CacheModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: async (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
         if (!redisUrl) {
           throw new Error('REDIS_URL not configured: please set REDIS_URL in environment/config');
         }
+        const store = new KeyvRedis(redisUrl);
         return {
-          store: redisStore,
-          url: redisUrl,
-          ttl: 300, // seconds
+          store: new Keyv({ store }),
+          ttl: 300 * 1000, // milliseconds
         };
+      },
       inject: [ConfigService],
       isGlobal: true,
     }),
