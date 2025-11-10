@@ -1,9 +1,4 @@
-import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { LeaderboardService } from './leaderboard.service';
-import { LeaderboardEntry, LeaderboardEntrySchema } from '../schemas/leaderboard-entry.schema';
-import { User, UserSchema } from '../schemas/user.schema';
-import { Guess, GuessSchema } from '../schemas/guess.schema';
+import { Riddle, RiddleSchema } from '../schemas/riddle.schema';
 
 @Module({
   imports: [
@@ -11,6 +6,7 @@ import { Guess, GuessSchema } from '../schemas/guess.schema';
       { name: LeaderboardEntry.name, schema: LeaderboardEntrySchema },
       { name: User.name, schema: UserSchema },
       { name: Guess.name, schema: GuessSchema },
+      { name: Riddle.name, schema: RiddleSchema },
     ]),
   ],
   providers: [LeaderboardService],
