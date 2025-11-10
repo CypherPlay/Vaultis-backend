@@ -4,7 +4,6 @@ import { Model } from 'mongoose';
 import { Guess, GuessDocument } from '../schemas/guess.schema';
 import { User, UserDocument } from '../schemas/user.schema';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
-import { LeaderboardEntry, LeaderboardEntryDocument } from '../schemas/leaderboard-entry.schema';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 
 @Injectable()
@@ -13,7 +12,6 @@ export class LeaderboardService {
     @InjectModel(Guess.name) private guessModel: Model<GuessDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Riddle.name) private riddleModel: Model<RiddleDocument>,
-    @InjectModel(LeaderboardEntry.name) private leaderboardEntryModel: Model<LeaderboardEntryDocument>,
   ) {}
 
   @UseInterceptors(CacheInterceptor)

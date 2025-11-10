@@ -10,8 +10,8 @@ export class LeaderboardEntry {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
   userId: User;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Riddle', required: true, index: true })
-  riddleId: Riddle;
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Riddle', index: true })
+  riddleId?: Riddle;
 
   @Prop({ required: true, default: 0 })
   totalWinnings: number;
@@ -20,7 +20,7 @@ export class LeaderboardEntry {
   rank: number;
 
   @Prop({ index: true }) // createdAt is automatically managed by timestamps: true
-  createdAt?: Date;
+  createdAt: Date;
 }
 
 export const LeaderboardEntrySchema = SchemaFactory.createForClass(LeaderboardEntry);
