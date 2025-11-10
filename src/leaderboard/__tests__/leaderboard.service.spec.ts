@@ -89,3 +89,9 @@ describe('LeaderboardService', () => {
 
 
       const result = await service.getDailyLeaderboard();
+
+      expect(result).toBeDefined();
+      expect(result.length).toBe(mockAggregatedData.length);
+    });
+  });
+});
