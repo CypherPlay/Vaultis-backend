@@ -13,11 +13,19 @@ export class LeaderboardService {
     @InjectModel(Guess.name) private guessModel: Model<GuessDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Riddle.name) private riddleModel: Model<RiddleDocument>,
-  ) {}
+  ) {
+  }
+
+  private static getSecondsUntilEndOfDay(): number {
+    const now = new Date();
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+    return Math.floor((endOfDay.getTime() - now.getTime()) / 1000);
+  }
 
   @UseInterceptors(CacheInterceptor)
   @CacheKey('daily_leaderboard')
-  @CacheTTL(60 * 60 * 12) // Cache for 12 hours
+  @CacheTTL(LeaderboardService.getSecondsUntilEndOfDay()) // Cache until the end of the day
   async getDailyLeaderboard(): Promise<LeaderboardEntry[]> {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
