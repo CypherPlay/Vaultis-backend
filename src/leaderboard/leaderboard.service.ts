@@ -1,62 +1,113 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Connection, Types } from 'mongoose';
-import { InjectConnection } from '@nestjs/mongoose';
-import { Cron } from '@nestjs/schedule';
-import { LeaderboardEntry, LeaderboardEntryDocument } from '../schemas/leaderboard-entry.schema';
-import { User, UserDocument } from '../schemas/user.schema';
+import { Model } from 'mongoose';
 import { Guess, GuessDocument } from '../schemas/guess.schema';
+import { User, UserDocument } from '../schemas/user.schema';
+import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
+import { LeaderboardEntry, LeaderboardEntryDocument } from '../schemas/leaderboard-entry.schema';
 
 @Injectable()
 export class LeaderboardService {
   constructor(
-    @InjectModel(LeaderboardEntry.name) private leaderboardEntryModel: Model<LeaderboardEntryDocument>,
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Guess.name) private guessModel: Model<GuessDocument>,
-    @InjectConnection() private connection: Connection,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Riddle.name) private riddleModel: Model<RiddleDocument>,
+    @InjectModel(LeaderboardEntry.name) private leaderboardEntryModel: Model<LeaderboardEntryDocument>,
   ) {}
 
-  @Cron('0 * * * *') // Run every hour
-  async calculateRanksAndWinnings(): Promise<void> {
-    const session = await this.connection.startSession();
-    session.startTransaction();
+  async getDailyLeaderboard(): Promise<LeaderboardEntry[]> {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
 
-    try {
-      const users = await this.userModel.find().session(session).exec();
-      const userWinnings: { userId: Types.ObjectId; totalWinnings: number }[] = [];
-
-      for (const user of users) {
-        const correctGuessesCount = await this.guessModel.countDocuments({
-          userId: user._id,
+    const dailyLeaderboard = await this.guessModel.aggregate([
+      {
+        $match: {
           isCorrect: true,
-        }).session(session).exec();
-        userWinnings.push({ userId: user._id as Types.ObjectId, totalWinnings: correctGuessesCount });
-      }
+          submittedAt: { $gte: startOfDay, $lte: endOfDay },
+        },
+      },
+      {
+        $group: {
+          _id: '$userId',
+          totalCorrectGuesses: { $sum: 1 },
+          firstCorrectGuessAt: { $min: '$submittedAt' },
+        },
+      },
+      {
+        $sort: {
+          totalCorrectGuesses: -1,
+          firstCorrectGuessAt: 1,
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: '$user',
+      },
+      {
+        $project: {
+          _id: 0,
+          userId: '$_id',
+          username: '$user.username',
+          score: '$totalCorrectGuesses',
+          submittedAt: '$firstCorrectGuessAt',
+        },
+      },
+    ]).exec();
 
-      userWinnings.sort((a, b) => b.totalWinnings - a.totalWinnings);
+    return dailyLeaderboard;
+  }
 
-      await this.leaderboardEntryModel.deleteMany({}).session(session).exec();
+  async getAllTimeLeaderboard(): Promise<LeaderboardEntry[]> {
+    const allTimeLeaderboard = await this.guessModel.aggregate([
+      {
+        $match: {
+          isCorrect: true,
+        },
+      },
+      {
+        $group: {
+          _id: '$userId',
+          totalCorrectGuesses: { $sum: 1 },
+          firstCorrectGuessAt: { $min: '$submittedAt' },
+        },
+      },
+      {
+        $sort: {
+          totalCorrectGuesses: -1,
+          firstCorrectGuessAt: 1,
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: '$user',
+      },
+      {
+        $project: {
+          _id: 0,
+          userId: '$_id',
+          username: '$user.username',
+          score: '$totalCorrectGuesses',
+          submittedAt: '$firstCorrectGuessAt',
+        },
+      },
+    ]).exec();
 
-      let rank = 1;
-      for (const entry of userWinnings) {
-        await this.leaderboardEntryModel.create([
-          {
-            userId: entry.userId,
-            totalWinnings: entry.totalWinnings,
-            rank: rank,
-          },
-        ], { session: session });
-        rank++;
-      }
-
-      await session.commitTransaction();
-      console.log('Leaderboard updated successfully.');
-    } catch (error) {
-      await session.abortTransaction();
-      console.error('Failed to update leaderboard:', error);
-      throw error;
-    } finally {
-      session.endSession();
-    }
+    return allTimeLeaderboard;
   }
 }
