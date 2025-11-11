@@ -14,6 +14,13 @@ interface DailyRankingResult {
   submittedAt: Date;
 }
 
+export interface DailyRankingEntry {
+  rank: number;
+  userId: string;
+  correctGuesses: number;
+  submissionTime: Date;
+}
+
 @Injectable()
 export class LeaderboardService {
   constructor(
@@ -83,13 +90,13 @@ export class LeaderboardService {
 
   @UseInterceptors(CacheInterceptor)
   @CacheKey('daily_leaderboard')
-  @CacheTTL(LeaderboardService.getSecondsUntilEndOfDay()) // Cache until the end of the day
-  async getDailyRankings(): Promise<any[]> {
+  @CacheTTL(60 * 60 * 12) // Cache for 12 hours
+  async getDailyRankings(): Promise<DailyRankingEntry[]> {
     const rankings = await this.calculateDailyRankings();
     return rankings.map((entry, index) => ({
       rank: index + 1,
       userId: entry.userId,
-      totalWinnings: entry.score,
+      correctGuesses: entry.score,
       submissionTime: entry.submittedAt,
     }));
   }
