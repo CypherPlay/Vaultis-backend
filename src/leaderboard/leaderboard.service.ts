@@ -7,6 +7,27 @@ import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
 import { LeaderboardEntry } from '../schemas/leaderboard-entry.schema';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 
+interface DailyRankingResult {
+  userId: string;
+  username: string;
+  score: number;
+  submittedAt: Date;
+}
+
+export interface DailyRankingEntry {
+  rank: number;
+  userId: string;
+  correctGuesses: number;
+  submissionTime: Date;
+}
+
+export interface AllTimeRankingEntry {
+  userId: string;
+  username: string;
+  score: number;
+  submittedAt: Date;
+}
+
 @Injectable()
 export class LeaderboardService {
   constructor(
@@ -23,10 +44,7 @@ export class LeaderboardService {
     return Math.floor((endOfDay.getTime() - now.getTime()) / 1000);
   }
 
-  @UseInterceptors(CacheInterceptor)
-  @CacheKey('daily_leaderboard')
-  @CacheTTL(LeaderboardService.getSecondsUntilEndOfDay()) // Cache until the end of the day
-  async getDailyLeaderboard(): Promise<LeaderboardEntry[]> {
+  async calculateDailyRankings(): Promise<DailyRankingResult[]> {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date();
@@ -78,9 +96,22 @@ export class LeaderboardService {
   }
 
   @UseInterceptors(CacheInterceptor)
+  @CacheKey('daily_leaderboard')
+  @CacheTTL(60 * 60 * 12) // Cache for 12 hours
+  async getDailyRankings(): Promise<DailyRankingEntry[]> {
+    const rankings = await this.calculateDailyRankings();
+    return rankings.map((entry, index) => ({
+      rank: index + 1,
+      userId: entry.userId,
+      correctGuesses: entry.score,
+      submissionTime: entry.submittedAt,
+    }));
+  }
+
+  @UseInterceptors(CacheInterceptor)
   @CacheKey('all_time_leaderboard')
   @CacheTTL(60 * 60 * 24) // Cache for 24 hours
-  async getAllTimeLeaderboard(): Promise<LeaderboardEntry[]> {
+  async getAllTimeLeaderboard(): Promise<AllTimeRankingEntry[]> {
     const allTimeLeaderboard = await this.guessModel.aggregate([
       {
         $match: {

@@ -6,6 +6,8 @@ import { Guess, GuessSchema } from '../schemas/guess.schema';
 import { Riddle, RiddleSchema } from '../schemas/riddle.schema';
 import { LeaderboardService } from './leaderboard.service';
 
+import { LeaderboardController } from './leaderboard.controller';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -15,6 +17,7 @@ import { LeaderboardService } from './leaderboard.service';
       { name: Riddle.name, schema: RiddleSchema },
     ]),
   ],
+  controllers: [LeaderboardController],
   providers: [LeaderboardService],
   exports: [LeaderboardService],
 })

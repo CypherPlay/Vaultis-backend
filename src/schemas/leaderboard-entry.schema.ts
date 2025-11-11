@@ -14,7 +14,7 @@ export class LeaderboardEntry {
   riddleId?: Riddle;
 
   @Prop({ required: true, default: 0 })
-  totalWinnings: number;
+  correctGuesses: number;
 
   @Prop({ required: true, unique: true })
   rank: number;

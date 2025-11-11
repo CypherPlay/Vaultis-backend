@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { LeaderboardService } from '../leaderboard.service';
+import { LeaderboardService, DailyRankingEntry } from '../leaderboard.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { GuessDocument } from '../../schemas/guess.schema';
@@ -76,8 +76,8 @@ describe('LeaderboardService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('getDailyLeaderboard performance', () => {
-    it('should return daily leaderboard within acceptable time for large datasets', async () => {
+  describe('getDailyRankings performance', () => {
+    it('should return daily rankings within acceptable time for large datasets', async () => {
       const mockAggregatedData = Array.from({ length: 1000 }, (_, i) => ({
         _id: `user${i}`,
         totalCorrectGuesses: Math.floor(Math.random() * 100),
@@ -88,10 +88,12 @@ describe('LeaderboardService', () => {
       (guessModel.aggregate().exec as jest.Mock).mockResolvedValue(mockAggregatedData);
 
 
-      const result = await service.getDailyLeaderboard();
+      const result: DailyRankingEntry[] = await service.getDailyRankings();
 
       expect(result).toBeDefined();
       expect(result.length).toBe(mockAggregatedData.length);
+      expect(result[0]).toHaveProperty('correctGuesses');
+      expect(typeof result[0].correctGuesses).toBe('number');
     });
   });
 });
