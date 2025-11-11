@@ -85,9 +85,28 @@ describe('LeaderboardService', () => {
         submittedAt: new Date(),
       }));
 
-      (guessModel.aggregate().exec as jest.Mock)
-        .mockResolvedValueOnce(mockAggregatedData.slice(0, 10)) // First page
-        .mockResolvedValueOnce([{ total: 20 }]); // Total count
+      const mockCursor1 = {
+        exec: jest.fn().mockResolvedValueOnce(mockAggregatedData.slice(0, 10)),
+        match: jest.fn().mockReturnThis(),
+        group: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        lookup: jest.fn().mockReturnThis(),
+        unwind: jest.fn().mockReturnThis(),
+        project: jest.fn().mockReturnThis(),
+      };
+      const mockCursor2 = {
+        exec: jest.fn().mockResolvedValueOnce([{ total: 20 }]),
+        match: jest.fn().mockReturnThis(),
+        group: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        lookup: jest.fn().mockReturnThis(),
+        unwind: jest.fn().mockReturnThis(),
+        project: jest.fn().mockReturnThis(),
+      };
+
+      (guessModel.aggregate as jest.Mock)
+        .mockReturnValueOnce(mockCursor1)
+        .mockReturnValueOnce(mockCursor2);
 
       const result = await service.getAllTimeRankings(1, 10);
 
@@ -99,9 +118,28 @@ describe('LeaderboardService', () => {
     });
 
     it('should return an empty array and zero total if no rankings', async () => {
-      (guessModel.aggregate().exec as jest.Mock)
-        .mockResolvedValueOnce([]) // No data
-        .mockResolvedValueOnce([{ total: 0 }]); // Total count
+      const mockCursor1 = {
+        exec: jest.fn().mockResolvedValueOnce([]),
+        match: jest.fn().mockReturnThis(),
+        group: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        lookup: jest.fn().mockReturnThis(),
+        unwind: jest.fn().mockReturnThis(),
+        project: jest.fn().mockReturnThis(),
+      };
+      const mockCursor2 = {
+        exec: jest.fn().mockResolvedValueOnce([{ total: 0 }]),
+        match: jest.fn().mockReturnThis(),
+        group: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        lookup: jest.fn().mockReturnThis(),
+        unwind: jest.fn().mockReturnThis(),
+        project: jest.fn().mockReturnThis(),
+      };
+
+      (guessModel.aggregate as jest.Mock)
+        .mockReturnValueOnce(mockCursor1)
+        .mockReturnValueOnce(mockCursor2);
 
       const result = await service.getAllTimeRankings(1, 10);
 
