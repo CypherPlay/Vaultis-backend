@@ -30,9 +30,6 @@ export class LeaderboardService {
     return Math.floor((endOfDay.getTime() - now.getTime()) / 1000);
   }
 
-  @UseInterceptors(CacheInterceptor)
-  @CacheKey('daily_leaderboard')
-  @CacheTTL(LeaderboardService.getSecondsUntilEndOfDay()) // Cache until the end of the day
   async calculateDailyRankings(): Promise<DailyRankingResult[]> {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
