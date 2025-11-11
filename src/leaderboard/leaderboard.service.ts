@@ -21,6 +21,13 @@ export interface DailyRankingEntry {
   submissionTime: Date;
 }
 
+export interface AllTimeRankingEntry {
+  userId: string;
+  username: string;
+  score: number;
+  submittedAt: Date;
+}
+
 @Injectable()
 export class LeaderboardService {
   constructor(
@@ -104,7 +111,7 @@ export class LeaderboardService {
   @UseInterceptors(CacheInterceptor)
   @CacheKey('all_time_leaderboard')
   @CacheTTL(60 * 60 * 24) // Cache for 24 hours
-  async getAllTimeLeaderboard(): Promise<LeaderboardEntry[]> {
+  async getAllTimeLeaderboard(): Promise<AllTimeRankingEntry[]> {
     const allTimeLeaderboard = await this.guessModel.aggregate([
       {
         $match: {
