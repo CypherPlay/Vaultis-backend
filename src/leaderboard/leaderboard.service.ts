@@ -7,6 +7,13 @@ import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
 import { LeaderboardEntry } from '../schemas/leaderboard-entry.schema';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 
+interface DailyRankingResult {
+  userId: string;
+  username: string;
+  score: number;
+  submittedAt: Date;
+}
+
 @Injectable()
 export class LeaderboardService {
   constructor(
@@ -26,7 +33,7 @@ export class LeaderboardService {
   @UseInterceptors(CacheInterceptor)
   @CacheKey('daily_leaderboard')
   @CacheTTL(LeaderboardService.getSecondsUntilEndOfDay()) // Cache until the end of the day
-  async getDailyLeaderboard(): Promise<LeaderboardEntry[]> {
+  async calculateDailyRankings(): Promise<DailyRankingResult[]> {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date();
@@ -75,6 +82,19 @@ export class LeaderboardService {
     ]).exec();
 
     return dailyLeaderboard;
+  }
+
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('daily_leaderboard')
+  @CacheTTL(LeaderboardService.getSecondsUntilEndOfDay()) // Cache until the end of the day
+  async getDailyRankings(): Promise<any[]> {
+    const rankings = await this.calculateDailyRankings();
+    return rankings.map((entry, index) => ({
+      rank: index + 1,
+      userId: entry.userId,
+      totalWinnings: entry.score,
+      submissionTime: entry.submittedAt,
+    }));
   }
 
   @UseInterceptors(CacheInterceptor)
