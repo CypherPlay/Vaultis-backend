@@ -76,24 +76,76 @@ describe('LeaderboardService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('getDailyRankings performance', () => {
-    it('should return daily rankings within acceptable time for large datasets', async () => {
-      const mockAggregatedData = Array.from({ length: 1000 }, (_, i) => ({
-        _id: `user${i}`,
-        totalCorrectGuesses: Math.floor(Math.random() * 100),
-        firstCorrectGuessAt: new Date(),
-        user: { username: `username${i}` },
+  describe('getAllTimeRankings', () => {
+    it('should return paginated all-time rankings and total count', async () => {
+      const mockAggregatedData = Array.from({ length: 20 }, (_, i) => ({
+        userId: `user${i}`,
+        username: `username${i}`,
+        score: 100 - i,
+        submittedAt: new Date(),
       }));
 
-      (guessModel.aggregate().exec as jest.Mock).mockResolvedValue(mockAggregatedData);
+      const mockCursor1 = {
+        exec: jest.fn().mockResolvedValueOnce(mockAggregatedData.slice(0, 10)),
+        match: jest.fn().mockReturnThis(),
+        group: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        lookup: jest.fn().mockReturnThis(),
+        unwind: jest.fn().mockReturnThis(),
+        project: jest.fn().mockReturnThis(),
+      };
+      const mockCursor2 = {
+        exec: jest.fn().mockResolvedValueOnce([{ total: 20 }]),
+        match: jest.fn().mockReturnThis(),
+        group: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        lookup: jest.fn().mockReturnThis(),
+        unwind: jest.fn().mockReturnThis(),
+        project: jest.fn().mockReturnThis(),
+      };
 
+      (guessModel.aggregate as jest.Mock)
+        .mockReturnValueOnce(mockCursor1)
+        .mockReturnValueOnce(mockCursor2);
 
-      const result: DailyRankingEntry[] = await service.getDailyRankings();
+      const result = await service.getAllTimeRankings(1, 10);
 
       expect(result).toBeDefined();
-      expect(result.length).toBe(mockAggregatedData.length);
-      expect(result[0]).toHaveProperty('correctGuesses');
-      expect(typeof result[0].correctGuesses).toBe('number');
+      expect(result.data.length).toBe(10);
+      expect(result.total).toBe(20);
+      expect(result.data[0]).toHaveProperty('username');
+      expect(result.data[0]).toHaveProperty('score');
+    });
+
+    it('should return an empty array and zero total if no rankings', async () => {
+      const mockCursor1 = {
+        exec: jest.fn().mockResolvedValueOnce([]),
+        match: jest.fn().mockReturnThis(),
+        group: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        lookup: jest.fn().mockReturnThis(),
+        unwind: jest.fn().mockReturnThis(),
+        project: jest.fn().mockReturnThis(),
+      };
+      const mockCursor2 = {
+        exec: jest.fn().mockResolvedValueOnce([{ total: 0 }]),
+        match: jest.fn().mockReturnThis(),
+        group: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        lookup: jest.fn().mockReturnThis(),
+        unwind: jest.fn().mockReturnThis(),
+        project: jest.fn().mockReturnThis(),
+      };
+
+      (guessModel.aggregate as jest.Mock)
+        .mockReturnValueOnce(mockCursor1)
+        .mockReturnValueOnce(mockCursor2);
+
+      const result = await service.getAllTimeRankings(1, 10);
+
+      expect(result).toBeDefined();
+      expect(result.data.length).toBe(0);
+      expect(result.total).toBe(0);
     });
   });
 });

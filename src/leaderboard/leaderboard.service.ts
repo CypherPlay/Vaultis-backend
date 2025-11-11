@@ -108,11 +108,10 @@ export class LeaderboardService {
     }));
   }
 
-  @UseInterceptors(CacheInterceptor)
-  @CacheKey('all_time_leaderboard')
-  @CacheTTL(60 * 60 * 24) // Cache for 24 hours
-  async getAllTimeLeaderboard(): Promise<AllTimeRankingEntry[]> {
-    const allTimeLeaderboard = await this.guessModel.aggregate([
+  async getAllTimeRankings(page: number = 1, limit: number = 10): Promise<{ data: AllTimeRankingEntry[]; total: number }> {
+    const skip = (page - 1) * limit;
+
+    const aggregationPipeline = [
       {
         $match: {
           isCorrect: true,
@@ -151,8 +150,18 @@ export class LeaderboardService {
           submittedAt: '$firstCorrectGuessAt',
         },
       },
-    ]).exec();
+    ];
 
-    return allTimeLeaderboard;
+    const [paginatedResults, totalCount] = await Promise.all([
+      this.guessModel.aggregate([...aggregationPipeline, { $skip: skip }, { $limit: limit }]).exec(),
+      this.guessModel.aggregate([...aggregationPipeline, { $count: 'total' }]).exec(),
+    ]);
+
+    const total = totalCount.length > 0 ? totalCount[0].total : 0;
+
+    return {
+      data: paginatedResults,
+      total,
+    };
   }
 }
