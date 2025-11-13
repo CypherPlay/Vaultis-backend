@@ -31,6 +31,8 @@ export class GuessesService {
     const session = await this.connection.startSession();
     session.startTransaction();
 
+    let isCorrectGuess = false; // Flag to determine if the guess was correct
+
     try {
       // 1. Fetch riddle and its entry fee
       const riddle = await this.riddleModel.findById(riddleId).select('+answer').session(session).exec();
@@ -48,7 +50,7 @@ export class GuessesService {
       // 3. Create a new Guess entity
       const normalizedGuess = this.normalizeString(guess);
       const normalizedAnswer = this.normalizeString(riddle.answer);
-      const isCorrect = normalizedGuess === normalizedAnswer;
+      isCorrectGuess = normalizedGuess === normalizedAnswer; // Assign to the flag
 
       const user = await this.userModel.findById(userId).session(session).exec();
       if (!user) {
@@ -59,11 +61,11 @@ export class GuessesService {
         user,
         riddle,
         guess,
-        isCorrect,
+        isCorrectGuess, // Use the flag here
         session,
       );
 
-      if (isCorrect) {
+      if (isCorrectGuess) {
         // Mark riddle as solved and assign winner
         const riddleUpdate = await this.riddleModel.updateOne(
           { _id: riddleId, status: 'active' },
@@ -86,13 +88,12 @@ export class GuessesService {
 
         console.log(`Riddle ${riddleId} solved by user ${userId}. Prize awarded.`);
         await session.commitTransaction();
-        await this.leaderboardService.updateDailyRankings();
+        // Leaderboard update will be handled outside the transaction
         return { message: 'Congratulations! You solved the riddle and won the prize!' };
       }
 
       console.log(`Guess submitted for riddle ${riddleId} by user ${userId}`);
       await session.commitTransaction();
-      await this.leaderboardService.updateDailyRankings();
       return { message: 'Guess submitted successfully' };
     } catch (error) {
       await session.abortTransaction();
@@ -100,6 +101,16 @@ export class GuessesService {
       throw error;
     } finally {
       session.endSession();
+      // Leaderboard update logic moved outside the transaction
+      if (isCorrectGuess) {
+        try {
+          await this.leaderboardService.calculateDailyRankings();
+          console.log('Leaderboard daily rankings updated successfully.');
+        } catch (leaderboardError) {
+          console.error('Failed to update leaderboard daily rankings:', leaderboardError);
+          // Do not re-throw, as this should not affect the user's guess submission
+        }
+      }
     }
   }
 }
