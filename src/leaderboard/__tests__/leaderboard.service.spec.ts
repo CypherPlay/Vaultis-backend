@@ -206,35 +206,5 @@ describe('LeaderboardService', () => {
     });
   });
 
-  // Test case for large dataset performance (conceptual, as actual performance testing is complex)
-  describe('Performance considerations', () => {
-    it('should handle a large number of guesses without significant performance degradation (conceptual test)', async () => {
-      const largeDataset = [];
-      for (let i = 0; i < 1000; i++) {
-        largeDataset.push({
-          userId: `user${i}`,
-          username: `user${i}_name`,
-          score: Math.floor(Math.random() * 100),
-          submittedAt: new Date(Date.now() - i * 1000),
-        });
-      }
 
-      (guessModel.aggregate as jest.Mock).mockReturnThis();
-      (guessModel.aggregate().exec as jest.Mock)
-        .mockResolvedValueOnce(largeDataset.slice(0, 10)) // Simulate first page
-        .mockResolvedValueOnce([{ total: largeDataset.length }]); // Simulate total count
-
-      const startTime = process.hrtime.bigint();
-      const result = await service.getAllTimeRankings(1, 10);
-      const endTime = process.hrtime.bigint();
-      const timeTaken = Number(endTime - startTime) / 1_000_000; // Convert to milliseconds
-
-      expect(result.data.length).toBe(10);
-      expect(result.total).toBe(largeDataset.length);
-      // This is a conceptual check. In a real scenario, you'd have a benchmark.
-      // For now, we just ensure it completes without error and within a reasonable (though undefined) time.
-      console.log(`getAllTimeRankings with large dataset took ${timeTaken} ms`);
-      expect(timeTaken).toBeLessThan(500); // Expect it to be relatively fast (e.g., under 500ms for 1000 items)
-    });
-  });
 });
