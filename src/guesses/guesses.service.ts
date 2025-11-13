@@ -4,6 +4,7 @@ import { WalletService } from '../wallet/wallet.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Connection, Types } from 'mongoose';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
+import { LeaderboardService } from '../leaderboard/leaderboard.service';
 
 import { InjectConnection } from '@nestjs/mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
@@ -17,6 +18,7 @@ export class GuessesService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectConnection() private readonly connection: Connection,
     private readonly guessesRepository: GuessesRepository,
+    private readonly leaderboardService: LeaderboardService,
   ) {}
 
   private normalizeString(str: string): string {
@@ -84,11 +86,13 @@ export class GuessesService {
 
         console.log(`Riddle ${riddleId} solved by user ${userId}. Prize awarded.`);
         await session.commitTransaction();
+        await this.leaderboardService.updateDailyRankings();
         return { message: 'Congratulations! You solved the riddle and won the prize!' };
       }
 
       console.log(`Guess submitted for riddle ${riddleId} by user ${userId}`);
       await session.commitTransaction();
+      await this.leaderboardService.updateDailyRankings();
       return { message: 'Guess submitted successfully' };
     } catch (error) {
       await session.abortTransaction();
