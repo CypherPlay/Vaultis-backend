@@ -4,6 +4,7 @@ import { WalletService } from '../wallet/wallet.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Connection, Types } from 'mongoose';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
+import { LeaderboardService } from '../leaderboard/leaderboard.service';
 
 import { InjectConnection } from '@nestjs/mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
@@ -17,6 +18,7 @@ export class GuessesService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectConnection() private readonly connection: Connection,
     private readonly guessesRepository: GuessesRepository,
+    private readonly leaderboardService: LeaderboardService,
   ) {}
 
   private normalizeString(str: string): string {
@@ -28,6 +30,8 @@ export class GuessesService {
 
     const session = await this.connection.startSession();
     session.startTransaction();
+
+    let isCorrectGuess = false; // Flag to determine if the guess was correct
 
     try {
       // 1. Fetch riddle and its entry fee
@@ -46,7 +50,7 @@ export class GuessesService {
       // 3. Create a new Guess entity
       const normalizedGuess = this.normalizeString(guess);
       const normalizedAnswer = this.normalizeString(riddle.answer);
-      const isCorrect = normalizedGuess === normalizedAnswer;
+      isCorrectGuess = normalizedGuess === normalizedAnswer; // Assign to the flag
 
       const user = await this.userModel.findById(userId).session(session).exec();
       if (!user) {
@@ -57,11 +61,11 @@ export class GuessesService {
         user,
         riddle,
         guess,
-        isCorrect,
+        isCorrectGuess, // Use the flag here
         session,
       );
 
-      if (isCorrect) {
+      if (isCorrectGuess) {
         // Mark riddle as solved and assign winner
         const riddleUpdate = await this.riddleModel.updateOne(
           { _id: riddleId, status: 'active' },
@@ -84,6 +88,7 @@ export class GuessesService {
 
         console.log(`Riddle ${riddleId} solved by user ${userId}. Prize awarded.`);
         await session.commitTransaction();
+        // Leaderboard update will be handled outside the transaction
         return { message: 'Congratulations! You solved the riddle and won the prize!' };
       }
 
@@ -96,6 +101,16 @@ export class GuessesService {
       throw error;
     } finally {
       session.endSession();
+      // Leaderboard update logic moved outside the transaction
+      if (isCorrectGuess) {
+        try {
+          await this.leaderboardService.calculateDailyRankings();
+          console.log('Leaderboard daily rankings updated successfully.');
+        } catch (leaderboardError) {
+          console.error('Failed to update leaderboard daily rankings:', leaderboardError);
+          // Do not re-throw, as this should not affect the user's guess submission
+        }
+      }
     }
   }
 }
