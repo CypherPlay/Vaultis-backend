@@ -114,9 +114,7 @@ describe('GuessesService', () => {
         answer: 'correct answer',
         prizePool: prizePool,
         status: 'active',
-        select: jest.fn().mockReturnThis(),
-        session: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue(this),
+        exec: jest.fn(),
       };
   
       const mockUser = {
@@ -124,7 +122,7 @@ describe('GuessesService', () => {
         balance: new Types.Decimal128('1000'),
         solvedRiddles: [],
         session: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue(this),
+        exec: jest.fn(),
       };
   
       beforeEach(() => {
