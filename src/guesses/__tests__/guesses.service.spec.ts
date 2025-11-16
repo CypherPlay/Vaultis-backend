@@ -103,7 +103,6 @@ describe('GuessesService', () => {
   
     describe('submitGuess', () => {
       const userId = new Types.ObjectId().toHexString();
-      const walletAddress = '0xabc';
       const riddleId = new Types.ObjectId().toHexString();
       const entryFee = new Types.Decimal128('10');
       const prizePool = new Types.Decimal128('100');
@@ -152,7 +151,7 @@ describe('GuessesService', () => {
       it('should successfully submit an incorrect guess after deducting entry fee', async () => {
         const submitGuessDto = { riddleId, guess: 'wrong answer' };
   
-        const result = await service.submitGuess(userId, walletAddress, submitGuessDto);
+        const result = await service.submitGuess(userId, submitGuessDto);
   
         expect(mockSession.startTransaction).toHaveBeenCalled();
         expect(mockWalletService.deductEntryFee).toHaveBeenCalledWith(userId, parseFloat(entryFee.toString()), mockSession);
@@ -172,10 +171,13 @@ describe('GuessesService', () => {
         expect(mockSession.endSession).toHaveBeenCalled();
       });
   
-      it('should throw BadRequestException if riddle not found', async () => {
-        mockRiddleModel.exec.mockResolvedValueOnce(null);
+            it('should throw BadRequestException if riddle not found', async () =>{
   
-        await expect(service.submitGuess(userId, walletAddress, { riddleId, guess: 'any' })).rejects.toThrow(BadRequestException);
+              mockRiddleModel.exec.mockResolvedValueOnce(null);
+  
+        
+  
+              await expect(service.submitGuess(userId, { riddleId, guess: 'any' })).rejects.toThrow(BadRequestException);
         expect(mockSession.startTransaction).toHaveBeenCalled();
         expect(mockWalletService.deductEntryFee).not.toHaveBeenCalled();
         expect(mockSession.abortTransaction).toHaveBeenCalled();
@@ -186,7 +188,7 @@ describe('GuessesService', () => {
         mockRiddle.status = 'solved';
         mockRiddleModel.exec.mockResolvedValueOnce(mockRiddle);
   
-        await expect(service.submitGuess(userId, walletAddress, { riddleId, guess: 'any' })).rejects.toThrow(BadRequestException);
+        await expect(service.submitGuess(userId, { riddleId, guess: 'any' })).rejects.toThrow(BadRequestException);
         expect(mockSession.startTransaction).toHaveBeenCalled();
         expect(mockWalletService.deductEntryFee).not.toHaveBeenCalled();
         expect(mockSession.abortTransaction).toHaveBeenCalled();
@@ -196,7 +198,7 @@ describe('GuessesService', () => {
       it('should throw BadRequestException if user not found', async () => {
         mockUserModel.exec.mockResolvedValueOnce(null);
   
-        await expect(service.submitGuess(userId, walletAddress, { riddleId, guess: 'any' })).rejects.toThrow(BadRequestException);
+        await expect(service.submitGuess(userId, { riddleId, guess: 'any' })).rejects.toThrow(BadRequestException);
         expect(mockSession.startTransaction).toHaveBeenCalled();
         expect(mockWalletService.deductEntryFee).toHaveBeenCalled();
         expect(mockSession.abortTransaction).toHaveBeenCalled();
@@ -206,7 +208,7 @@ describe('GuessesService', () => {
       it('should rethrow BadRequestException from WalletService and abort transaction', async () => {
         mockWalletService.deductEntryFee.mockRejectedValueOnce(new BadRequestException('Insufficient funds'));
   
-        await expect(service.submitGuess(userId, walletAddress, { riddleId, guess: 'any' })).rejects.toThrow(BadRequestException);
+        await expect(service.submitGuess(userId, { riddleId, guess: 'any' })).rejects.toThrow(BadRequestException);
         expect(mockSession.startTransaction).toHaveBeenCalled();
         expect(mockWalletService.deductEntryFee).toHaveBeenCalledWith(userId, parseFloat(entryFee.toString()), mockSession);
         expect(mockSession.abortTransaction).toHaveBeenCalled();
@@ -214,10 +216,9 @@ describe('GuessesService', () => {
       });
   
       it('should successfully submit a correct guess, mark user as winner, and update riddle', async () => {
-        const submitGuessDto = { riddleId, guess: 'correct answer' };
-  
-        const result = await service.submitGuess(userId, walletAddress, submitGuessDto);
-  
+                const submitGuessDto = { riddleId, guess: 'correct answer' };
+        
+                const result = await service.submitGuess(userId, submitGuessDto);  
         expect(mockSession.startTransaction).toHaveBeenCalled();
         expect(mockWalletService.deductEntryFee).toHaveBeenCalledWith(userId, parseFloat(entryFee.toString()), mockSession);
         expect(mockGuessModel.create).toHaveBeenCalledWith(
@@ -248,7 +249,7 @@ describe('GuessesService', () => {
         const submitGuessDto = { riddleId, guess: 'correct answer' };
         mockUserModel.updateOne.mockReturnValueOnce({ exec: jest.fn().mockRejectedValueOnce(new Error('Database error')) });
   
-        await expect(service.submitGuess(userId, walletAddress, submitGuessDto)).rejects.toThrow('Database error');
+        await expect(service.submitGuess(userId, submitGuessDto)).rejects.toThrow('Database error');
         expect(mockSession.startTransaction).toHaveBeenCalled();
         expect(mockWalletService.deductEntryFee).toHaveBeenCalled();
         expect(mockGuessModel.create).toHaveBeenCalled();
@@ -264,7 +265,7 @@ describe('GuessesService', () => {
         mockRiddleModel.updateOne.mockReturnThis();
         mockRiddleModel.exec.mockResolvedValueOnce({ acknowledged: true, modifiedCount: 0 }); // Simulate no modification
   
-        await expect(service.submitGuess(userId, walletAddress, submitGuessDto)).rejects.toThrow(BadRequestException);
+        await expect(service.submitGuess(userId, submitGuessDto)).rejects.toThrow(BadRequestException);
         expect(mockSession.startTransaction).toHaveBeenCalled();
         expect(mockWalletService.deductEntryFee).toHaveBeenCalled();
         expect(mockGuessModel.create).toHaveBeenCalled();
@@ -278,7 +279,7 @@ describe('GuessesService', () => {
         const submitGuessDto = { riddleId, guess: 'Correct Answer!' };
         mockRiddle.answer = 'correct answer';
   
-        const result = await service.submitGuess(userId, walletAddress, submitGuessDto);
+        const result = await service.submitGuess(userId, submitGuessDto);
   
         expect(mockGuessModel.create).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -293,7 +294,7 @@ describe('GuessesService', () => {
         const submitGuessDto = { riddleId, guess: 'Wrong Answer!' };
         mockRiddle.answer = 'correct answer';
   
-        const result = await service.submitGuess(userId, walletAddress, submitGuessDto);
+        const result = await service.submitGuess(userId, submitGuessDto);
   
         expect(mockGuessModel.create).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -310,7 +311,7 @@ describe('GuessesService', () => {
           calculateDailyRankings: jest.fn().mockRejectedValueOnce(new Error('Leaderboard error')),
         });
   
-        const result = await service.submitGuess(userId, walletAddress, submitGuessDto);
+        const result = await service.submitGuess(userId, submitGuessDto);
   
         expect(mockSession.commitTransaction).toHaveBeenCalled(); // Main transaction should still commit
         expect(service['leaderboardService'].calculateDailyRankings).toHaveBeenCalled();
