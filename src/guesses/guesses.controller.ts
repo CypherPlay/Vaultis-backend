@@ -11,16 +11,12 @@ export class GuessesController {
   @Post('submit')
   async submitGuess(@Request() req, @Body() submitGuessDto: SubmitGuessDto) {
     const userId = req.user?.userId;
-    const walletAddress = req.user?.walletAddress;
 
     if (!userId || typeof userId !== 'string') {
       throw new BadRequestException('Invalid authentication payload: missing or invalid userId');
     }
-    if (!walletAddress || typeof walletAddress !== 'string') {
-      throw new BadRequestException('Invalid authentication payload: missing or invalid walletAddress');
-    }
 
     // proceed to call service with validated values
-    return this.guessesService.submitGuess(userId, walletAddress, submitGuessDto);
+    return this.guessesService.submitGuess(userId, submitGuessDto);
   }
 }

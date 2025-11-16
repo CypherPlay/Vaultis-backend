@@ -25,7 +25,7 @@ export class GuessesService {
     return str.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '').trim();
   }
 
-  async submitGuess(userId: string, walletAddress: string, submitGuessDto: SubmitGuessDto) {
+  async submitGuess(userId: string, submitGuessDto: SubmitGuessDto) {
     const { riddleId, guess } = submitGuessDto;
 
     const session = await this.connection.startSession();
@@ -44,6 +44,13 @@ export class GuessesService {
         throw new BadRequestException('Riddle has already been solved.');
       }
 
+      const user = await this.userModel.findById(userId).session(session).exec();
+      if (!user) {
+        throw new BadRequestException('User not found.');
+      }
+
+      const walletAddress = user.walletAddress; // Fetch walletAddress from the user object
+
       // 2. Deduct entry fee (atomic check for balance/retry token)
       await this.walletService.deductEntryFee(userId, parseFloat(riddle.entryFee.toString()), session);
 
@@ -51,11 +58,6 @@ export class GuessesService {
       const normalizedGuess = this.normalizeString(guess);
       const normalizedAnswer = this.normalizeString(riddle.answer);
       isCorrectGuess = normalizedGuess === normalizedAnswer; // Assign to the flag
-
-      const user = await this.userModel.findById(userId).session(session).exec();
-      if (!user) {
-        throw new BadRequestException('User not found.');
-      }
 
       await this.guessesRepository.createGuess(
         user,

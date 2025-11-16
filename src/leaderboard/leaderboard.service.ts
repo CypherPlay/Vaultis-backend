@@ -1,6 +1,6 @@
 import { Injectable, UseInterceptors } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, PipelineStage } from 'mongoose';
 import { Guess, GuessDocument } from '../schemas/guess.schema';
 import { User, UserDocument } from '../schemas/user.schema';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
@@ -111,7 +111,7 @@ export class LeaderboardService {
   async getAllTimeRankings(page: number = 1, limit: number = 10): Promise<{ data: AllTimeRankingEntry[]; total: number }> {
     const skip = (page - 1) * limit;
 
-    const aggregationPipeline = [
+    const aggregationPipeline: PipelineStage[] = [
       {
         $match: {
           isCorrect: true,
@@ -153,8 +153,8 @@ export class LeaderboardService {
     ];
 
     const [paginatedResults, totalCount] = await Promise.all([
-      this.guessModel.aggregate([...aggregationPipeline, { $skip: skip }, { $limit: limit }]).exec(),
-      this.guessModel.aggregate([...aggregationPipeline, { $count: 'total' }]).exec(),
+      this.guessModel.aggregate(aggregationPipeline.concat([{ $skip: skip }, { $limit: limit }])).exec(),
+      this.guessModel.aggregate(aggregationPipeline.concat([{ $count: 'total' }])).exec(),
     ]);
 
     const total = totalCount.length > 0 ? totalCount[0].total : 0;
