@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
+import { IsDate } from 'class-validator';
 
 export class LeaderboardEntryDto {
   @Expose()
@@ -20,5 +21,7 @@ export class LeaderboardEntryDto {
 
   @Expose()
   @ApiProperty({ description: 'The submission time of the user's last winning guess' })
+  @Type(() => Date)
+  @IsDate()
   submissionTime: Date;
 }
