@@ -1,10 +1,11 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { SubmitGuessDto } from './dto/submit-guess.dto';
 import { WalletService } from '../wallet/wallet.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Connection, Types } from 'mongoose';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
 import { LeaderboardService } from '../leaderboard/leaderboard.service';
+import { HashUtils } from '../utils/hash-utils';
 
 import { InjectConnection } from '@nestjs/mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
@@ -12,6 +13,8 @@ import { GuessesRepository } from './guesses.repository';
 
 @Injectable()
 export class GuessesService {
+  private readonly logger = new Logger(GuessesService.name);
+
   constructor(
     private readonly walletService: WalletService,
     @InjectModel(Riddle.name) private riddleModel: Model<RiddleDocument>,
@@ -27,6 +30,8 @@ export class GuessesService {
 
   async submitGuess(userId: string, submitGuessDto: SubmitGuessDto) {
     const { riddleId, guess } = submitGuessDto;
+
+    this.logger.log(`Attempting guess submission for user ${userId} on riddle ${riddleId}. Hashed guess: ${HashUtils.hashString(guess)}`);
 
     const session = await this.connection.startSession();
     session.startTransaction();
@@ -57,6 +62,8 @@ export class GuessesService {
       const normalizedAnswer = this.normalizeString(riddle.answer);
       isCorrectGuess = normalizedGuess === normalizedAnswer; // Assign to the flag
 
+      this.logger.log(`Guess result for user ${userId} on riddle ${riddleId}: ${isCorrectGuess ? 'Correct' : 'Incorrect'}. Hashed guess: ${HashUtils.hashString(guess)}`);
+
       await this.guessesRepository.createGuess(
         user,
         riddle,
@@ -86,18 +93,18 @@ export class GuessesService {
           { session }
         ).exec();
 
-        console.log(`Riddle ${riddleId} solved by user ${userId}. Prize awarded.`);
+        this.logger.log(`Riddle ${riddleId} solved by user ${userId}. Prize awarded.`);
         await session.commitTransaction();
         // Leaderboard update will be handled outside the transaction
         return { message: 'Congratulations! You solved the riddle and won the prize!' };
       }
 
-      console.log(`Guess submitted for riddle ${riddleId} by user ${userId}`);
+      this.logger.log(`Guess submitted for riddle ${riddleId} by user ${userId}`);
       await session.commitTransaction();
       return { message: 'Guess submitted successfully' };
     } catch (error) {
       await session.abortTransaction();
-      console.error('Transaction aborted due to error:', error);
+      this.logger.error(`Transaction aborted for user ${userId} on riddle ${riddleId} due to error: ${error.message}. Hashed guess: ${HashUtils.hashString(guess)}`, error.stack);
       throw error;
     } finally {
       session.endSession();
@@ -105,9 +112,9 @@ export class GuessesService {
       if (isCorrectGuess) {
         try {
           await this.leaderboardService.calculateDailyRankings();
-          console.log('Leaderboard daily rankings updated successfully.');
+          this.logger.log('Leaderboard daily rankings updated successfully.');
         } catch (leaderboardError) {
-          console.error('Failed to update leaderboard daily rankings:', leaderboardError);
+          this.logger.error('Failed to update leaderboard daily rankings:', leaderboardError.stack);
           // Do not re-throw, as this should not affect the user's guess submission
         }
       }
