@@ -31,7 +31,7 @@ export class GuessesService {
   async submitGuess(userId: string, submitGuessDto: SubmitGuessDto) {
     const { riddleId, guess } = submitGuessDto;
 
-    this.logger.log(`Attempting guess submission for user ${userId} on riddle ${riddleId}. Hashed guess: ${HashUtils.hashString(guess)}`);
+    this.logger.log(`Attempting guess submission for user ${userId} on riddle ${riddleId}.`);
 
     const session = await this.connection.startSession();
     session.startTransaction();
@@ -62,7 +62,7 @@ export class GuessesService {
       const normalizedAnswer = this.normalizeString(riddle.answer);
       isCorrectGuess = normalizedGuess === normalizedAnswer; // Assign to the flag
 
-      this.logger.log(`Guess result for user ${userId} on riddle ${riddleId}: ${isCorrectGuess ? 'Correct' : 'Incorrect'}. Hashed guess: ${HashUtils.hashString(guess)}`);
+      this.logger.log(`Guess result for user ${userId} on riddle ${riddleId}: ${isCorrectGuess ? 'Correct' : 'Incorrect'}.`);
 
       await this.guessesRepository.createGuess(
         user,
@@ -104,7 +104,7 @@ export class GuessesService {
       return { message: 'Guess submitted successfully' };
     } catch (error) {
       await session.abortTransaction();
-      this.logger.error(`Transaction aborted for user ${userId} on riddle ${riddleId} due to error: ${error.message}. Hashed guess: ${HashUtils.hashString(guess)}`, error.stack);
+      this.logger.error(`Transaction aborted for user ${userId} on riddle ${riddleId} due to error: ${error.message}.`, error.stack);
       throw error;
     } finally {
       session.endSession();
