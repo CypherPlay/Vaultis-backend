@@ -20,7 +20,9 @@ export class LeaderboardEntryDto {
   totalWinnings: number;
 
   @Expose()
-  @ApiProperty({ description: 'The submission time of the user\'s last winning guess' })
+  @ApiProperty({
+    description: "The submission time of the user's last winning guess",
+  })
   @Type(() => Date)
   @IsDate()
   submissionTime: Date;

@@ -34,8 +34,7 @@ export class LeaderboardService {
     @InjectModel(Guess.name) private guessModel: Model<GuessDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Riddle.name) private riddleModel: Model<RiddleDocument>,
-  ) {
-  }
+  ) {}
 
   private static getSecondsUntilEndOfDay(): number {
     const now = new Date();
@@ -50,47 +49,49 @@ export class LeaderboardService {
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    const dailyLeaderboard = await this.guessModel.aggregate([
-      {
-        $match: {
-          isCorrect: true,
-          submittedAt: { $gte: startOfDay, $lte: endOfDay },
+    const dailyLeaderboard = await this.guessModel
+      .aggregate([
+        {
+          $match: {
+            isCorrect: true,
+            submittedAt: { $gte: startOfDay, $lte: endOfDay },
+          },
         },
-      },
-      {
-        $group: {
-          _id: '$userId',
-          totalCorrectGuesses: { $sum: 1 },
-          firstCorrectGuessAt: { $min: '$submittedAt' },
+        {
+          $group: {
+            _id: '$userId',
+            totalCorrectGuesses: { $sum: 1 },
+            firstCorrectGuessAt: { $min: '$submittedAt' },
+          },
         },
-      },
-      {
-        $sort: {
-          totalCorrectGuesses: -1,
-          firstCorrectGuessAt: 1,
+        {
+          $sort: {
+            totalCorrectGuesses: -1,
+            firstCorrectGuessAt: 1,
+          },
         },
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'user',
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'user',
+          },
         },
-      },
-      {
-        $unwind: '$user',
-      },
-      {
-        $project: {
-          _id: 0,
-          userId: '$_id',
-          username: '$user.username',
-          score: '$totalCorrectGuesses',
-          submittedAt: '$firstCorrectGuessAt',
+        {
+          $unwind: '$user',
         },
-      },
-    ]).exec();
+        {
+          $project: {
+            _id: 0,
+            userId: '$_id',
+            username: '$user.username',
+            score: '$totalCorrectGuesses',
+            submittedAt: '$firstCorrectGuessAt',
+          },
+        },
+      ])
+      .exec();
 
     return dailyLeaderboard;
   }
@@ -108,7 +109,10 @@ export class LeaderboardService {
     }));
   }
 
-  async getAllTimeRankings(page: number = 1, limit: number = 10): Promise<{ data: AllTimeRankingEntry[]; total: number }> {
+  async getAllTimeRankings(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{ data: AllTimeRankingEntry[]; total: number }> {
     const skip = (page - 1) * limit;
 
     const aggregationPipeline: PipelineStage[] = [
@@ -153,8 +157,14 @@ export class LeaderboardService {
     ];
 
     const [paginatedResults, totalCount] = await Promise.all([
-      this.guessModel.aggregate(aggregationPipeline.concat([{ $skip: skip }, { $limit: limit }])).exec(),
-      this.guessModel.aggregate(aggregationPipeline.concat([{ $count: 'total' }])).exec(),
+      this.guessModel
+        .aggregate(
+          aggregationPipeline.concat([{ $skip: skip }, { $limit: limit }]),
+        )
+        .exec(),
+      this.guessModel
+        .aggregate(aggregationPipeline.concat([{ $count: 'total' }]))
+        .exec(),
     ]);
 
     const total = totalCount.length > 0 ? totalCount[0].total : 0;

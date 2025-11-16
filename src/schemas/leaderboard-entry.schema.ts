@@ -7,7 +7,12 @@ export type LeaderboardEntryDocument = LeaderboardEntry & Document;
 
 @Schema({ timestamps: true })
 export class LeaderboardEntry {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true,
+  })
   userId: User;
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Riddle', index: true })
@@ -23,4 +28,5 @@ export class LeaderboardEntry {
   createdAt: Date;
 }
 
-export const LeaderboardEntrySchema = SchemaFactory.createForClass(LeaderboardEntry);
+export const LeaderboardEntrySchema =
+  SchemaFactory.createForClass(LeaderboardEntry);

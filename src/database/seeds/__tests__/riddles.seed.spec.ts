@@ -71,18 +71,22 @@ describe('Riddles Seed', () => {
     await mockSeed();
 
     expect(riddleModel.create).toHaveBeenCalledTimes(riddlesData.length);
-    expect(riddleModel.create).toHaveBeenCalledWith(expect.objectContaining({
-      question: riddlesData[0].question,
-      answer: riddlesData[0].answer,
-      answerHash: 'hashedAnswer',
-      seeded: true,
-    }));
-    expect(riddleModel.create).toHaveBeenCalledWith(expect.objectContaining({
-      question: riddlesData[1].question,
-      answer: riddlesData[1].answer,
-      answerHash: 'hashedAnswer',
-      seeded: true,
-    }));
+    expect(riddleModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        question: riddlesData[0].question,
+        answer: riddlesData[0].answer,
+        answerHash: 'hashedAnswer',
+        seeded: true,
+      }),
+    );
+    expect(riddleModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        question: riddlesData[1].question,
+        answer: riddlesData[1].answer,
+        answerHash: 'hashedAnswer',
+        seeded: true,
+      }),
+    );
     expect(app.close).toHaveBeenCalled();
   });
 
@@ -94,9 +98,11 @@ describe('Riddles Seed', () => {
     await mockSeed();
 
     expect(riddleModel.create).toHaveBeenCalledTimes(1);
-    expect(riddleModel.create).toHaveBeenCalledWith(expect.objectContaining({
-      question: riddlesData[1].question,
-    }));
+    expect(riddleModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        question: riddlesData[1].question,
+      }),
+    );
     expect(app.close).toHaveBeenCalled();
   });
 
@@ -116,7 +122,9 @@ describe('Riddles Seed', () => {
     mockUnseed.mockImplementation(unseed);
 
     process.env.NODE_ENV = 'development'; // Allow unseed in test environment
-    (riddleModel.deleteMany as jest.Mock).mockResolvedValue({ deletedCount: 2 });
+    (riddleModel.deleteMany as jest.Mock).mockResolvedValue({
+      deletedCount: 2,
+    });
 
     await mockUnseed();
 
@@ -132,7 +140,9 @@ describe('Riddles Seed', () => {
     process.env.NODE_ENV = 'production'; // Simulate production environment
     process.env.ALLOW_DB_SEED = 'false';
 
-    await expect(mockUnseed()).rejects.toThrow('Refusing to run unseed in non-development environment. Set NODE_ENV=development or ALLOW_DB_SEED=true to proceed.');
+    await expect(mockUnseed()).rejects.toThrow(
+      'Refusing to run unseed in non-development environment. Set NODE_ENV=development or ALLOW_DB_SEED=true to proceed.',
+    );
     expect(app.close).not.toHaveBeenCalled();
   });
 });

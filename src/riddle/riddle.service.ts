@@ -23,7 +23,10 @@ export class RiddleService {
       .exec();
   }
 
-  async findOne(id: string, session?: ClientSession): Promise<RiddleDocument | null> {
+  async findOne(
+    id: string,
+    session?: ClientSession,
+  ): Promise<RiddleDocument | null> {
     return this.riddleModel.findById(id, null, { session }).exec();
   }
 
@@ -39,7 +42,9 @@ export class RiddleService {
       .exec();
   }
 
-  async findEligibleRiddles(options?: { limit?: number }): Promise<RiddleDocument[]> {
+  async findEligibleRiddles(options?: {
+    limit?: number;
+  }): Promise<RiddleDocument[]> {
     const MAX_LIMIT = 500;
     const limit = Math.min(options?.limit ?? 100, MAX_LIMIT);
     // Example filter: exclude disabled riddles. Adjust as per your schema.
@@ -58,10 +63,7 @@ export class RiddleService {
     const filter: any = {
       disabled: { $ne: true },
       _id: { $nin: excludeIds },
-      $or: [
-        { lastUsedAt: { $lt: cooldownDate } },
-        { lastUsedAt: null },
-      ],
+      $or: [{ lastUsedAt: { $lt: cooldownDate } }, { lastUsedAt: null }],
     };
 
     if (randomize) {

@@ -7,7 +7,9 @@ import { ClientSession, Connection, Model, Types } from 'mongoose';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Decimal } from 'decimal.js';
 
-function isRiddleDocument(riddle: Riddle | RiddleDocument): riddle is RiddleDocument {
+function isRiddleDocument(
+  riddle: Riddle | RiddleDocument,
+): riddle is RiddleDocument {
   return riddle && (riddle as RiddleDocument)._id !== undefined;
 }
 
@@ -49,12 +51,16 @@ export class RiddleManagerService implements OnModuleInit {
       if (this.activeRiddle && isRiddleDocument(this.activeRiddle)) {
         expiredRiddleId = this.activeRiddle._id!.toString();
         this.logger.log(`Expiring previous riddle: ${expiredRiddleId}`);
-        const updateExpiredDto: UpdateRiddleDto = { expiresAt: now, lastUsedAt: now };
-        const updatedExpiredRiddle = await this.riddleService.updateRiddleMetadata(
-          expiredRiddleId,
-          updateExpiredDto,
-          session,
-        );
+        const updateExpiredDto: UpdateRiddleDto = {
+          expiresAt: now,
+          lastUsedAt: now,
+        };
+        const updatedExpiredRiddle =
+          await this.riddleService.updateRiddleMetadata(
+            expiredRiddleId,
+            updateExpiredDto,
+            session,
+          );
 
         if (!updatedExpiredRiddle) {
           this.logger.error(
@@ -76,7 +82,9 @@ export class RiddleManagerService implements OnModuleInit {
       );
 
       if (!newRiddle || !isRiddleDocument(newRiddle)) {
-        this.logger.warn('No eligible riddles found to activate. Aborting transaction.');
+        this.logger.warn(
+          'No eligible riddles found to activate. Aborting transaction.',
+        );
         await session.abortTransaction();
         this.activeRiddle = null;
         return;
@@ -85,7 +93,10 @@ export class RiddleManagerService implements OnModuleInit {
       const expiresAt = new Date();
       expiresAt.setUTCDate(expiresAt.getUTCDate() + 1); // Set expiration for 24 hours from now
 
-      const updateNewDto: UpdateRiddleDto = { expiresAt: expiresAt, lastUsedAt: now };
+      const updateNewDto: UpdateRiddleDto = {
+        expiresAt: expiresAt,
+        lastUsedAt: now,
+      };
       const updatedNewRiddle = await this.riddleService.updateRiddleMetadata(
         newRiddle._id!.toString(),
         updateNewDto,
@@ -112,10 +123,7 @@ export class RiddleManagerService implements OnModuleInit {
         await session.abortTransaction();
         this.logger.error('Transaction aborted due to error.');
       }
-      this.logger.error(
-        `Error rotating riddle: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Error rotating riddle: ${error.message}`, error.stack);
       this.activeRiddle = null;
     } finally {
       if (session) {
@@ -129,7 +137,10 @@ export class RiddleManagerService implements OnModuleInit {
    * Ensures atomic updates to prevent race conditions.
    * @param riddleId The ID of the riddle for which to update the prize pool.
    */
-  async updatePrizePool(riddleId: string, sessionArg?: ClientSession): Promise<void> {
+  async updatePrizePool(
+    riddleId: string,
+    sessionArg?: ClientSession,
+  ): Promise<void> {
     this.logger.log(`Updating prize pool for riddle: ${riddleId}`);
     let session = sessionArg;
     let ownsSession = false;
@@ -143,7 +154,9 @@ export class RiddleManagerService implements OnModuleInit {
 
       const riddle = await this.riddleService.findOne(riddleId, session);
       if (!riddle) {
-        this.logger.warn(`Riddle with ID ${riddleId} not found. Cannot update prize pool.`);
+        this.logger.warn(
+          `Riddle with ID ${riddleId} not found. Cannot update prize pool.`,
+        );
         if (ownsSession) {
           await session.abortTransaction();
         }
@@ -158,7 +171,9 @@ export class RiddleManagerService implements OnModuleInit {
       const entryFeeDecimal = new Decimal(riddle.entryFee?.toString() ?? '0');
       const totalGuessesDecimal = new Decimal(totalGuesses.toString());
       const newPrizePoolDecimal = entryFeeDecimal.times(totalGuessesDecimal);
-      const newPrizePool = Types.Decimal128.fromString(newPrizePoolDecimal.toString());
+      const newPrizePool = Types.Decimal128.fromString(
+        newPrizePoolDecimal.toString(),
+      );
 
       const updatedRiddle = await this.riddleService.updateRiddleMetadata(
         riddleId,
@@ -168,7 +183,7 @@ export class RiddleManagerService implements OnModuleInit {
 
       if (!updatedRiddle) {
         this.logger.error(
-          `Failed to update prize pool for riddle ${riddleId}. Aborting transaction.`
+          `Failed to update prize pool for riddle ${riddleId}. Aborting transaction.`,
         );
         if (ownsSession) {
           await session.abortTransaction();
@@ -180,7 +195,7 @@ export class RiddleManagerService implements OnModuleInit {
         await session.commitTransaction();
       }
       this.logger.log(
-        `Successfully updated prize pool for riddle ${riddleId} to ${newPrizePool}.`
+        `Successfully updated prize pool for riddle ${riddleId} to ${newPrizePool}.`,
       );
     } catch (error) {
       if (ownsSession && session) {
@@ -189,7 +204,7 @@ export class RiddleManagerService implements OnModuleInit {
       }
       this.logger.error(
         `Error updating prize pool for riddle ${riddleId}: ${error.message}`,
-        error.stack
+        error.stack,
       );
     } finally {
       if (ownsSession && session) {

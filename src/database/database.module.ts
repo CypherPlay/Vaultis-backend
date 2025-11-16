@@ -20,7 +20,7 @@ import { MongooseConfigModule } from './mongoose.module';
         synchronize: true, // Set to false in production
         extra: {
           max: 10, // Maximum number of connections in the pool
-          min: 2,  // Minimum number of connections in the pool
+          min: 2, // Minimum number of connections in the pool
         },
       }),
       inject: [ConfigService],

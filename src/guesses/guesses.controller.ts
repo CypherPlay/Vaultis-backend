@@ -1,4 +1,11 @@
-import { Controller, Post, Body, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  BadRequestException,
+} from '@nestjs/common';
 import { GuessesService } from './guesses.service';
 import { SubmitGuessDto } from './dto/submit-guess.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -13,7 +20,9 @@ export class GuessesController {
     const userId = req.user?.userId;
 
     if (!userId || typeof userId !== 'string') {
-      throw new BadRequestException('Invalid authentication payload: missing or invalid userId');
+      throw new BadRequestException(
+        'Invalid authentication payload: missing or invalid userId',
+      );
     }
 
     // proceed to call service with validated values

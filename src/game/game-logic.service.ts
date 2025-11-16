@@ -4,7 +4,12 @@ import * as crypto from 'crypto';
 @Injectable()
 export class GameLogicService {
   async checkGuess(userGuess: string, correctAnswer: string): Promise<boolean> {
-    if (userGuess === null || userGuess === undefined || correctAnswer === null || correctAnswer === undefined) {
+    if (
+      userGuess === null ||
+      userGuess === undefined ||
+      correctAnswer === null ||
+      correctAnswer === undefined
+    ) {
       return false;
     }
     const normalizedUserGuess = userGuess.trim().toLowerCase();

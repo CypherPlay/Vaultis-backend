@@ -72,7 +72,9 @@ describe('RiddleService', () => {
 
   describe('findOne', () => {
     it('should return a riddle by ID without sensitive fields by default', async () => {
-      jest.spyOn(model, 'findById').mockReturnValue({ exec: jest.fn().mockResolvedValue(mockRiddle) } as any);
+      jest.spyOn(model, 'findById').mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockRiddle),
+      } as any);
 
       const result = await service.findOne(mockRiddle._id.toString());
       expect(result).toEqual(mockRiddle);
@@ -82,7 +84,9 @@ describe('RiddleService', () => {
     });
 
     it('should return null if riddle is not found', async () => {
-      jest.spyOn(model, 'findById').mockReturnValue({ exec: jest.fn().mockResolvedValue(null) } as any);
+      jest
+        .spyOn(model, 'findById')
+        .mockReturnValue({ exec: jest.fn().mockResolvedValue(null) } as any);
 
       const result = await service.findOne('nonexistentId');
       expect(result).toBeNull();
@@ -91,7 +95,9 @@ describe('RiddleService', () => {
 
   describe('findOne', () => {
     it('should return a riddle by ID without sensitive fields by default', async () => {
-      jest.spyOn(model, 'findById').mockReturnValue({ exec: jest.fn().mockResolvedValue(mockRiddleWithSensitive) } as any);
+      jest.spyOn(model, 'findById').mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockRiddleWithSensitive),
+      } as any);
 
       const result = await service.findOne(mockRiddle._id.toString());
       expect(result).toEqual(mockRiddleWithSensitive);
@@ -101,7 +107,9 @@ describe('RiddleService', () => {
     });
 
     it('should return null if riddle is not found', async () => {
-      jest.spyOn(model, 'findById').mockReturnValue({ exec: jest.fn().mockResolvedValue(null) } as any);
+      jest
+        .spyOn(model, 'findById')
+        .mockReturnValue({ exec: jest.fn().mockResolvedValue(null) } as any);
 
       const result = await service.findOne('nonexistentId');
       expect(result).toBeNull();
@@ -113,7 +121,9 @@ describe('RiddleService', () => {
       jest.spyOn(model, 'find').mockReturnValue({
         skip: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue([mockRiddleWithSensitive, mockRiddle2]),
+        exec: jest
+          .fn()
+          .mockResolvedValue([mockRiddleWithSensitive, mockRiddle2]),
       } as any);
 
       const result = await service.findAll();
@@ -131,7 +141,9 @@ describe('RiddleService', () => {
         exec: jest.fn().mockResolvedValue([mockRiddle2]),
       } as any);
 
-      const result = await service.findOneEligibleRiddle(true, [mockRiddle._id.toString()]);
+      const result = await service.findOneEligibleRiddle(true, [
+        mockRiddle._id.toString(),
+      ]);
       expect(result).toEqual(mockRiddle2);
       expect(model.aggregate).toHaveBeenCalledWith([
         {
@@ -176,10 +188,16 @@ describe('RiddleService', () => {
 
   describe('updateRiddleMetadata', () => {
     it('should update riddle metadata and return the updated document', async () => {
-      const updateDto: UpdateRiddleDto = { expiresAt: new Date(), lastUsedAt: new Date() };
+      const updateDto: UpdateRiddleDto = {
+        expiresAt: new Date(),
+        lastUsedAt: new Date(),
+      };
       jest.spyOn(model, 'findByIdAndUpdate').mockResolvedValue(mockRiddle);
 
-      const result = await service.updateRiddleMetadata(mockRiddle._id.toString(), updateDto);
+      const result = await service.updateRiddleMetadata(
+        mockRiddle._id.toString(),
+        updateDto,
+      );
       expect(result).toEqual(mockRiddle);
       expect(model.findByIdAndUpdate).toHaveBeenCalledWith(
         mockRiddle._id.toString(),
@@ -189,19 +207,32 @@ describe('RiddleService', () => {
     });
 
     it('should return null if the riddle to update is not found', async () => {
-      const updateDto: UpdateRiddleDto = { expiresAt: new Date(), lastUsedAt: new Date() };
+      const updateDto: UpdateRiddleDto = {
+        expiresAt: new Date(),
+        lastUsedAt: new Date(),
+      };
       jest.spyOn(model, 'findByIdAndUpdate').mockResolvedValue(null);
 
-      const result = await service.updateRiddleMetadata(mockRiddle._id.toString(), updateDto);
+      const result = await service.updateRiddleMetadata(
+        mockRiddle._id.toString(),
+        updateDto,
+      );
       expect(result).toBeNull();
     });
 
     it('should pass the session to findByIdAndUpdate if provided', async () => {
-      const updateDto: UpdateRiddleDto = { expiresAt: new Date(), lastUsedAt: new Date() };
+      const updateDto: UpdateRiddleDto = {
+        expiresAt: new Date(),
+        lastUsedAt: new Date(),
+      };
       const mockSession = { some: 'session' };
       jest.spyOn(model, 'findByIdAndUpdate').mockResolvedValue(mockRiddle);
 
-      await service.updateRiddleMetadata(mockRiddle._id.toString(), updateDto, mockSession);
+      await service.updateRiddleMetadata(
+        mockRiddle._id.toString(),
+        updateDto,
+        mockSession,
+      );
       expect(model.findByIdAndUpdate).toHaveBeenCalledWith(
         mockRiddle._id.toString(),
         updateDto,

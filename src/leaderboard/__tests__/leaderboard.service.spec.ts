@@ -74,7 +74,9 @@ describe('LeaderboardService', () => {
       ];
 
       (guessModel.aggregate as jest.Mock).mockReturnThis();
-      (guessModel.aggregate().exec as jest.Mock).mockResolvedValue(mockDailyLeaderboard);
+      (guessModel.aggregate().exec as jest.Mock).mockResolvedValue(
+        mockDailyLeaderboard,
+      );
 
       const result = await service.calculateDailyRankings();
       expect(result).toEqual(mockDailyLeaderboard);
@@ -123,7 +125,9 @@ describe('LeaderboardService', () => {
         },
       ];
 
-      jest.spyOn(service, 'calculateDailyRankings').mockResolvedValue(mockCalculatedRankings);
+      jest
+        .spyOn(service, 'calculateDailyRankings')
+        .mockResolvedValue(mockCalculatedRankings);
 
       const result = await service.getDailyRankings();
       expect(result).toEqual(expectedRankings);
@@ -205,6 +209,4 @@ describe('LeaderboardService', () => {
       expect(guessModel.aggregate).toHaveBeenCalledTimes(2);
     });
   });
-
-
 });

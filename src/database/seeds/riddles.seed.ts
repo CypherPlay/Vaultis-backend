@@ -6,11 +6,17 @@ import * as bcrypt from 'bcrypt';
 import { Types } from 'mongoose';
 import { getModelToken } from '@nestjs/mongoose';
 
-function validateAndConvertDecimal(value: string, riddleQuestion: string, fieldName: string): Types.Decimal128 {
+function validateAndConvertDecimal(
+  value: string,
+  riddleQuestion: string,
+  fieldName: string,
+): Types.Decimal128 {
   const trimmedValue = value.trim();
   const numericPattern = /^\d+(?:\.\d+)?$/;
   if (!trimmedValue || !numericPattern.test(trimmedValue)) {
-    throw new Error(`Invalid ${fieldName} format for riddle "${riddleQuestion}": "${value}". Must be a non-empty numeric string.`);
+    throw new Error(
+      `Invalid ${fieldName} format for riddle "${riddleQuestion}": "${value}". Must be a non-empty numeric string.`,
+    );
   }
   return Types.Decimal128.fromString(trimmedValue);
 }
@@ -18,7 +24,9 @@ function validateAndConvertDecimal(value: string, riddleQuestion: string, fieldN
 async function seed() {
   const app = await NestFactory.create(AppModule);
 
-  const riddleModel: Model<RiddleDocument> = app.get(getModelToken(Riddle.name));
+  const riddleModel: Model<RiddleDocument> = app.get(
+    getModelToken(Riddle.name),
+  );
 
   const saltRounds = 10;
 
@@ -42,9 +50,13 @@ async function seed() {
   try {
     for (const riddle of riddlesData) {
       try {
-        const existingRiddle = await riddleModel.findOne({ question: riddle.question });
+        const existingRiddle = await riddleModel.findOne({
+          question: riddle.question,
+        });
         if (existingRiddle) {
-          console.info(`Riddle already exists: "${riddle.question}" - skipping`);
+          console.info(
+            `Riddle already exists: "${riddle.question}" - skipping`,
+          );
           continue;
         }
 
@@ -53,14 +65,25 @@ async function seed() {
           question: riddle.question,
           answer: riddle.answer,
           answerHash,
-          entryFee: validateAndConvertDecimal(riddle.entryFee, riddle.question, 'entryFee'),
-          prizePool: validateAndConvertDecimal(riddle.prizePool, riddle.question, 'prizePool'),
+          entryFee: validateAndConvertDecimal(
+            riddle.entryFee,
+            riddle.question,
+            'entryFee',
+          ),
+          prizePool: validateAndConvertDecimal(
+            riddle.prizePool,
+            riddle.question,
+            'prizePool',
+          ),
           expiresAt: riddle.expiresAt,
           seeded: true,
         });
         console.info(`Successfully seeded riddle: "${riddle.question}"`);
       } catch (error) {
-        console.error(`Failed to seed riddle "${riddle.question}":`, error.message);
+        console.error(
+          `Failed to seed riddle "${riddle.question}":`,
+          error.message,
+        );
       }
     }
 
@@ -71,13 +94,20 @@ async function seed() {
 }
 
 async function unseed() {
-  if (process.env.NODE_ENV !== 'development' && process.env.ALLOW_DB_SEED !== 'true') {
-    throw new Error('Refusing to run unseed in non-development environment. Set NODE_ENV=development or ALLOW_DB_SEED=true to proceed.');
+  if (
+    process.env.NODE_ENV !== 'development' &&
+    process.env.ALLOW_DB_SEED !== 'true'
+  ) {
+    throw new Error(
+      'Refusing to run unseed in non-development environment. Set NODE_ENV=development or ALLOW_DB_SEED=true to proceed.',
+    );
   }
 
   const app = await NestFactory.create(AppModule);
   try {
-    const riddleModel: Model<RiddleDocument> = app.get(getModelToken(Riddle.name));
+    const riddleModel: Model<RiddleDocument> = app.get(
+      getModelToken(Riddle.name),
+    );
 
     const result = await riddleModel.deleteMany({ seeded: true });
     console.info(`Deleted ${result.deletedCount} seeded riddles.`);
@@ -89,12 +119,12 @@ async function unseed() {
 // Execute seed or unseed based on command line arguments
 const args = process.argv.slice(2);
 if (args.includes('--seed')) {
-  seed().catch(err => {
+  seed().catch((err) => {
     console.error('Seeding failed:', err);
     process.exit(1);
   });
 } else if (args.includes('--unseed')) {
-  unseed().catch(err => {
+  unseed().catch((err) => {
     console.error('Unseeding failed:', err);
     process.exit(1);
   });
