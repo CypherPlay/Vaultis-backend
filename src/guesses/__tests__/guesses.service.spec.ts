@@ -350,18 +350,14 @@ describe('GuessesService', () => {
 
     it('should call leaderboardService.calculateDailyRankings after a correct guess, even if it fails', async () => {
       const submitGuessDto = { riddleId, guess: 'correct answer' };
-      jest.spyOn(service as any, 'leaderboardService').mockImplementationOnce({
-        calculateDailyRankings: jest
-          .fn()
-          .mockRejectedValueOnce(new Error('Leaderboard error')),
-      });
+      const calculateDailyRankingsSpy = jest
+        .spyOn(service['leaderboardService'], 'calculateDailyRankings')
+        .mockRejectedValueOnce(new Error('Leaderboard error'));
 
       const result = await service.submitGuess(userId, submitGuessDto);
 
       expect(mockSession.commitTransaction).toHaveBeenCalled(); // Main transaction should still commit
-      expect(
-        service['leaderboardService'].calculateDailyRankings,
-      ).toHaveBeenCalled();
+      expect(calculateDailyRankingsSpy).toHaveBeenCalled();
       expect(result).toEqual({
         message: 'Congratulations! You solved the riddle and won the prize!',
       });
@@ -370,15 +366,13 @@ describe('GuessesService', () => {
 
     it('should not call leaderboardService.calculateDailyRankings after an incorrect guess', async () => {
       const submitGuessDto = { riddleId, guess: 'wrong answer' };
-      jest.spyOn(service as any, 'leaderboardService').mockImplementationOnce({
-        calculateDailyRankings: jest.fn().mockResolvedValue(undefined),
-      });
+      const calculateDailyRankingsSpy = jest
+        .spyOn(service['leaderboardService'], 'calculateDailyRankings')
+        .mockResolvedValue(undefined);
 
-      await service.submitGuess(userId, walletAddress, submitGuessDto);
+      await service.submitGuess(userId, submitGuessDto);
 
-      expect(
-        service['leaderboardService'].calculateDailyRankings,
-      ).not.toHaveBeenCalled();
+      expect(calculateDailyRankingsSpy).not.toHaveBeenCalled();
     });
   });
 });
