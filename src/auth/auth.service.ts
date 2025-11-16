@@ -1,4 +1,11 @@
-import { Injectable, UnauthorizedException, Inject, InternalServerErrorException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  Inject,
+  InternalServerErrorException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { verifyMessage } from 'ethers';
 import Redis from 'ioredis';
@@ -16,7 +23,10 @@ export class AuthService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
-  async login(address: string, signature: string): Promise<{ accessToken: string }> {
+  async login(
+    address: string,
+    signature: string,
+  ): Promise<{ accessToken: string }> {
     const message = `Sign in to Vaultis with address ${address}`;
     const token = await this.verifySignature(message, signature, address);
 
@@ -28,7 +38,11 @@ export class AuthService {
     return { accessToken: token };
   }
 
-  async register(address: string, signature: string, username: string): Promise<{ accessToken: string }> {
+  async register(
+    address: string,
+    signature: string,
+    username: string,
+  ): Promise<{ accessToken: string }> {
     const message = `Register with Vaultis using address ${address}`;
     const token = await this.verifySignature(message, signature, address);
 
@@ -51,10 +65,16 @@ export class AuthService {
     return this.jwtService.verify(token);
   }
 
-  async verifySignature(message: string, signature: string, publicAddress: string): Promise<string> {
+  async verifySignature(
+    message: string,
+    signature: string,
+    publicAddress: string,
+  ): Promise<string> {
     // 1. Input validation
     if (!message || !signature || !publicAddress) {
-      throw new UnauthorizedException('Invalid parameters: message, signature, and address are required.');
+      throw new UnauthorizedException(
+        'Invalid parameters: message, signature, and address are required.',
+      );
     }
 
     if (!/^0x[a-fA-F0-9]{40}$/.test(publicAddress)) {
@@ -75,12 +95,17 @@ export class AuthService {
     return this.generateToken(payload);
   }
 
-  private async checkAndMarkNonce(message: string, ttlSeconds = 86400): Promise<void> {
+  private async checkAndMarkNonce(
+    message: string,
+    ttlSeconds = 86400,
+  ): Promise<void> {
     try {
       const key = `nonce:${createHash('sha256').update(message).digest('hex')}`;
       const setResult = await this.redis.set(key, '1', 'EX', ttlSeconds, 'NX');
       if (setResult === null) {
-        throw new UnauthorizedException('Replay attack detected: message already used.');
+        throw new UnauthorizedException(
+          'Replay attack detected: message already used.',
+        );
       }
     } catch (error) {
       if (error instanceof UnauthorizedException) {
@@ -89,7 +114,9 @@ export class AuthService {
       // Optionally more robust detection: if the error is a Redis client error
       // (e.g. instanceof Redis.RedisError or error.name/code indicating connection issue)
       console.error('Redis error during nonce check:', error);
-      throw new InternalServerErrorException('Authentication service temporarily unavailable.');
+      throw new InternalServerErrorException(
+        'Authentication service temporarily unavailable.',
+      );
     }
   }
 }

@@ -13,7 +13,13 @@ export class AuthController {
   }
 
   @Post('register')
-  async register(@Body() registerDto: RegisterDto): Promise<{ accessToken: string }> {
-    return this.authService.register(registerDto.address, registerDto.signature, registerDto.username);
+  async register(
+    @Body() registerDto: RegisterDto,
+  ): Promise<{ accessToken: string }> {
+    return this.authService.register(
+      registerDto.address,
+      registerDto.signature,
+      registerDto.username,
+    );
   }
 }

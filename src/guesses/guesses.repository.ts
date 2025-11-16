@@ -7,7 +7,9 @@ import { RiddleDocument } from '../schemas/riddle.schema';
 
 @Injectable()
 export class GuessesRepository {
-  constructor(@InjectModel(Guess.name) private guessModel: Model<GuessDocument>) {}
+  constructor(
+    @InjectModel(Guess.name) private guessModel: Model<GuessDocument>,
+  ) {}
 
   async createGuess(
     user: UserDocument,

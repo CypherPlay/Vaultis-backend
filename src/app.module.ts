@@ -30,7 +30,9 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
       useFactory: async (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
         if (!redisUrl) {
-          throw new Error('REDIS_URL not configured: please set REDIS_URL in environment/config');
+          throw new Error(
+            'REDIS_URL not configured: please set REDIS_URL in environment/config',
+          );
         }
         const store = new KeyvRedis(redisUrl);
         return {

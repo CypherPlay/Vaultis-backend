@@ -1,4 +1,3 @@
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Decimal128, Types } from 'mongoose';
 import { Guess } from './guess.schema';
@@ -40,7 +39,11 @@ export class Riddle {
   @Prop({ type: Types.ObjectId, ref: 'User', default: null })
   winnerId: Types.ObjectId;
 
-  @Prop({ type: String, enum: ['active', 'solved', 'expired'], default: 'active' })
+  @Prop({
+    type: String,
+    enum: ['active', 'solved', 'expired'],
+    default: 'active',
+  })
   status: string;
 }
 
