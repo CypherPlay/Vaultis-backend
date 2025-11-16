@@ -49,8 +49,6 @@ export class GuessesService {
         throw new BadRequestException('User not found.');
       }
 
-      const walletAddress = user.walletAddress; // Fetch walletAddress from the user object
-
       // 2. Deduct entry fee (atomic check for balance/retry token)
       await this.walletService.deductEntryFee(userId, parseFloat(riddle.entryFee.toString()), session);
 
