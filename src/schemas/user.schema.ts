@@ -25,8 +25,8 @@ export class User {
   @Prop({ default: 0 })
   balance: number;
 
-  @Prop({ default: 0 })
-  retryTokens;
+  @Prop({ type: Number, default: 0 })
+  retryTokens: number;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Riddle' }], default: [] })
   solvedRiddles: Types.Array<Types.ObjectId>;
