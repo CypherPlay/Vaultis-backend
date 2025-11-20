@@ -8,6 +8,7 @@ import { WalletModule } from './wallet/wallet.module';
 import { AuthModule } from './auth/auth.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { GameModule } from './game/game.module';
+import { RetryModule } from './retry/retry.module';
 import { CacheModule, CacheInterceptor } from '@nestjs/cache-manager';
 import Keyv from 'keyv';
 import KeyvRedis from '@keyv/redis';
@@ -24,6 +25,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     LeaderboardModule,
     RiddleModule,
     WalletModule,
+    RetryModule,
     ConfigModule.forRoot({ isGlobal: true }),
     CacheModule.registerAsync({
       imports: [ConfigModule],
