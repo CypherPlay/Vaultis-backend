@@ -24,6 +24,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     LeaderboardModule,
     RiddleModule,
     WalletModule,
+    RetryModule,
     ConfigModule.forRoot({ isGlobal: true }),
     CacheModule.registerAsync({
       imports: [ConfigModule],
