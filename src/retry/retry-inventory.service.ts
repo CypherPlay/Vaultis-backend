@@ -5,19 +5,22 @@ import { User, UserDocument } from '../schemas/user.schema';
 
 @Injectable()
 export class RetryInventoryService {
-  constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
-  ) {}
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
   async addRetries(userId: string, amount: number): Promise<UserDocument> {
+    if (amount <= 0 || !Number.isInteger(amount)) {
+      throw new BadRequestException('Amount must be a positive integer');
+    }
     const session = await this.userModel.db.startSession();
     session.startTransaction();
     try {
-      const user = await this.userModel.findByIdAndUpdate(
-        userId,
-        { $inc: { retryTokens: amount } },
-        { new: true, session }
-      ).exec();
+      const user = await this.userModel
+        .findByIdAndUpdate(
+          userId,
+          { $inc: { retryTokens: amount } },
+          { new: true, session },
+        )
+        .exec();
 
       if (!user) {
         throw new BadRequestException('User not found');
@@ -41,14 +44,19 @@ export class RetryInventoryService {
     const session = await this.userModel.db.startSession();
     session.startTransaction();
     try {
-      const user = await this.userModel.findOneAndUpdate(
-        { _id: userId, retryTokens: { $gte: amount } },
-        { $inc: { retryTokens: -amount } },
-        { new: true, session }
-      ).exec();
+      const user = await this.userModel
+        .findOneAndUpdate(
+          { _id: userId, retryTokens: { $gte: amount } },
+          { $inc: { retryTokens: -amount } },
+          { new: true, session },
+        )
+        .exec();
 
       if (!user) {
-        const userExists = await this.userModel.findById(userId).session(session).exec();
+        const userExists = await this.userModel
+          .findById(userId)
+          .session(session)
+          .exec();
         if (!userExists) {
           throw new BadRequestException('User not found');
         } else {
