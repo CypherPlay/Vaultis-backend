@@ -2,7 +2,6 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
-import * as mongoose from 'mongoose';
 
 @Injectable()
 export class RetryInventoryService {
