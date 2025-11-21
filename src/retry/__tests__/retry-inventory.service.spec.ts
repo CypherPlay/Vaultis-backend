@@ -5,10 +5,10 @@ import { Model } from 'mongoose';
 import { RetryInventory, RetryInventoryDocument } from '../../schemas/retry-inventory.schema';
 import { BadRequestException } from '@nestjs/common';
 
-const mockRetryInventory = (retries: number = 0): RetryInventoryDocument => ({
+const mockRetryInventory = (retryCount: number = 0): RetryInventoryDocument => ({
   _id: 'someRetryInventoryId',
   userId: 'someUserId',
-  retries,
+  retryCount,
   save: jest.fn().mockResolvedValue(true),
 } as any);
 
@@ -49,8 +49,8 @@ describe('RetryInventoryService', () => {
       expect(result).toEqual(retryInventory);
       expect(retryInventoryModel.findOneAndUpdate).toHaveBeenCalledWith(
         { userId: 'someUserId' },
-        { $inc: { retries: 3 } },
-        { new: true }
+        { $inc: { retryCount: 3 }, updatedAt: expect.any(Date) },
+        { new: true, upsert: true }
       );
     });
 
@@ -68,35 +68,42 @@ describe('RetryInventoryService', () => {
   describe('deductRetries', () => {
     it('should deduct retries from a user', async () => {
       const retryInventory = mockRetryInventory(5);
-      jest.spyOn(retryInventoryModel, 'findOne').mockReturnValue({
-        exec: jest.fn().mockResolvedValue(retryInventory),
+      jest.spyOn(retryInventoryModel, 'findOneAndUpdate').mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockRetryInventory(2)),
       } as any);
 
       const result = await service.deductRetries('someUserId', 3);
-      expect(retryInventoryModel.findOne).toHaveBeenCalledWith({ userId: 'someUserId' });
-      expect(retryInventory.retries).toBe(2);
-      expect(retryInventory.save).toHaveBeenCalled();
-      expect(result).toEqual(retryInventory);
+      expect(retryInventoryModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { userId: 'someUserId', retryCount: { $gte: 3 } },
+        { $inc: { retryCount: -3 }, updatedAt: expect.any(Date) },
+        { new: true }
+      );
+      expect(result.retryCount).toBe(2);
     });
 
     it('should throw BadRequestException if retry inventory not found', async () => {
+      jest.spyOn(retryInventoryModel, 'findOneAndUpdate').mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      } as any);
       jest.spyOn(retryInventoryModel, 'findOne').mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
       } as any);
 
       await expect(service.deductRetries('nonExistentUser', 1)).rejects.toThrow(
-        BadRequestException
+        new BadRequestException('Retry inventory not found for user'),
       );
     });
 
     it('should throw BadRequestException if insufficient retries', async () => {
-      const retryInventory = mockRetryInventory(2);
+      jest.spyOn(retryInventoryModel, 'findOneAndUpdate').mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      } as any);
       jest.spyOn(retryInventoryModel, 'findOne').mockReturnValue({
-        exec: jest.fn().mockResolvedValue(retryInventory),
+        exec: jest.fn().mockResolvedValue(mockRetryInventory(2)),
       } as any);
 
       await expect(service.deductRetries('someUserId', 3)).rejects.toThrow(
-        BadRequestException
+        new BadRequestException('Insufficient retry tokens'),
       );
     });
   });
@@ -113,14 +120,34 @@ describe('RetryInventoryService', () => {
       expect(result).toBe(10);
     });
 
-    it('should throw BadRequestException if retry inventory not found', async () => {
+    it('should return 0 if retry inventory not found', async () => {
       jest.spyOn(retryInventoryModel, 'findOne').mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
       } as any);
 
-      await expect(service.getRetries('nonExistentUser')).rejects.toThrow(
-        BadRequestException
+      const result = await service.getRetries('nonExistentUser');
+      expect(result).toBe(0);
+    });
+  });
+
+  describe('verifyOnChainPurchase', () => {
+    it('should add retries after successful on-chain verification', async () => {
+      const userId = 'testUserId';
+      const transactionHash = '0x123abc';
+      const expectedAmount = 5;
+      const initialRetryInventory = mockRetryInventory(10);
+      const updatedRetryInventory = mockRetryInventory(15);
+
+      jest.spyOn(service, 'addRetries').mockResolvedValue(updatedRetryInventory);
+
+      const result = await service.verifyOnChainPurchase(
+        userId,
+        transactionHash,
+        expectedAmount,
       );
+
+      expect(service.addRetries).toHaveBeenCalledWith(userId, expectedAmount);
+      expect(result).toEqual(updatedRetryInventory);
     });
   });
 });
