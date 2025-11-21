@@ -3,6 +3,7 @@ import { WalletService } from '../wallet.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { User } from '../../schemas/user.schema';
 import { REDIS_CLIENT } from '../../database/redis.module';
+import { RetryInventoryService } from '../../retry/retry-inventory.service';
 import { Model } from 'mongoose';
 import Redis from 'ioredis';
 import {
@@ -14,6 +15,7 @@ describe('WalletService', () => {
   let service: WalletService;
   let userModel: Model<User>;
   let redisClient: Redis;
+  let retryInventoryService: RetryInventoryService;
 
   const mockUserModel = {
     findById: jest.fn().mockReturnThis(),
@@ -24,6 +26,12 @@ describe('WalletService', () => {
   const mockRedisClient = {
     set: jest.fn(),
     del: jest.fn(),
+  };
+
+  const mockRetryInventoryService = {
+    deductRetries: jest.fn(),
+    addRetries: jest.fn(),
+    getRetries: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -38,12 +46,17 @@ describe('WalletService', () => {
           provide: REDIS_CLIENT,
           useValue: mockRedisClient,
         },
+        {
+          provide: RetryInventoryService,
+          useValue: mockRetryInventoryService,
+        },
       ],
     }).compile();
 
     service = module.get<WalletService>(WalletService);
     userModel = module.get<Model<User>>(getModelToken(User.name));
     redisClient = module.get<Redis>(REDIS_CLIENT);
+    retryInventoryService = module.get<RetryInventoryService>(RetryInventoryService);
   });
 
   it('should be defined', () => {
@@ -59,12 +72,11 @@ describe('WalletService', () => {
       mockUserModel.exec.mockResolvedValueOnce({
         _id: userId,
         balance: 100,
-        retryTokens: 0,
         save: mockUserModel.save,
       });
       mockUserModel.save.mockResolvedValueOnce(true);
 
-      await service.deductEntryFee(userId, entryFee);
+      await service.deductEntryFee(userId, entryFee, null);
 
       expect(userModel.findById).toHaveBeenCalledWith(userId);
       expect(mockUserModel.save).toHaveBeenCalled();
@@ -78,15 +90,15 @@ describe('WalletService', () => {
       mockUserModel.exec.mockResolvedValueOnce({
         _id: userId,
         balance: 5,
-        retryTokens: 1,
         save: mockUserModel.save,
       });
-      mockUserModel.save.mockResolvedValueOnce(true);
+      mockRetryInventoryService.deductRetries.mockResolvedValueOnce(true);
 
-      await service.deductEntryFee(userId, entryFee);
+      await service.deductEntryFee(userId, entryFee, null);
 
       expect(userModel.findById).toHaveBeenCalledWith(userId);
-      expect(mockUserModel.save).toHaveBeenCalled();
+      expect(mockUserModel.save).not.toHaveBeenCalled(); // Should not save user model if retry tokens are used
+      expect(mockRetryInventoryService.deductRetries).toHaveBeenCalledWith(userId, 1, null);
       expect(mockRedisClient.del).toHaveBeenCalledWith(
         `lock:user:${userId}:deduct`,
       );
@@ -97,14 +109,15 @@ describe('WalletService', () => {
       mockUserModel.exec.mockResolvedValueOnce({
         _id: userId,
         balance: 5,
-        retryTokens: 0,
         save: mockUserModel.save,
       });
+      mockRetryInventoryService.deductRetries.mockResolvedValueOnce(false);
 
-      await expect(service.deductEntryFee(userId, entryFee)).rejects.toThrow(
+      await expect(service.deductEntryFee(userId, entryFee, null)).rejects.toThrow(
         BadRequestException,
       );
       expect(mockUserModel.save).not.toHaveBeenCalled();
+      expect(mockRetryInventoryService.deductRetries).toHaveBeenCalledWith(userId, 1, null);
       expect(mockRedisClient.del).toHaveBeenCalledWith(
         `lock:user:${userId}:deduct`,
       );
@@ -114,7 +127,7 @@ describe('WalletService', () => {
       mockRedisClient.set.mockResolvedValueOnce('OK');
       mockUserModel.exec.mockResolvedValueOnce(null);
 
-      await expect(service.deductEntryFee(userId, entryFee)).rejects.toThrow(
+      await expect(service.deductEntryFee(userId, entryFee, null)).rejects.toThrow(
         BadRequestException,
       );
       expect(mockUserModel.save).not.toHaveBeenCalled();
@@ -126,7 +139,7 @@ describe('WalletService', () => {
     it('should throw BadRequestException if lock cannot be acquired', async () => {
       mockRedisClient.set.mockResolvedValueOnce(null);
 
-      await expect(service.deductEntryFee(userId, entryFee)).rejects.toThrow(
+      await expect(service.deductEntryFee(userId, entryFee, null)).rejects.toThrow(
         BadRequestException,
       );
       expect(userModel.findById).not.toHaveBeenCalled();
@@ -138,7 +151,7 @@ describe('WalletService', () => {
       mockRedisClient.set.mockResolvedValueOnce('OK');
       mockUserModel.exec.mockRejectedValueOnce(new Error('DB error'));
 
-      await expect(service.deductEntryFee(userId, entryFee)).rejects.toThrow(
+      await expect(service.deductEntryFee(userId, entryFee, null)).rejects.toThrow(
         InternalServerErrorException,
       );
       expect(mockRedisClient.del).toHaveBeenCalledWith(
@@ -155,7 +168,6 @@ describe('WalletService', () => {
       const user = {
         _id: userId,
         balance: 100,
-        retryTokens: 0,
         save: mockUserModel.save,
       };
       mockUserModel.exec.mockResolvedValueOnce(user);
@@ -177,51 +189,20 @@ describe('WalletService', () => {
     });
   });
 
-  describe('addRetryTokens', () => {
-    const userId = 'user123';
-    const count = 2;
-
-    it('should add retry tokens to user', async () => {
-      const user = {
-        _id: userId,
-        balance: 100,
-        retryTokens: 0,
-        save: mockUserModel.save,
-      };
-      mockUserModel.exec.mockResolvedValueOnce(user);
-      mockUserModel.save.mockResolvedValueOnce(true);
-
-      await service.addRetryTokens(userId, count);
-
-      expect(user.retryTokens).toBe(2);
-      expect(mockUserModel.save).toHaveBeenCalled();
-    });
-
-    it('should throw BadRequestException if user not found', async () => {
-      mockUserModel.exec.mockResolvedValueOnce(null);
-
-      await expect(service.addRetryTokens(userId, count)).rejects.toThrow(
-        BadRequestException,
-      );
-      expect(mockUserModel.save).not.toHaveBeenCalled();
-    });
-  });
-
   describe('getUserBalance', () => {
     const userId = 'user123';
 
-    it('should return user balance and retry tokens', async () => {
+    it('should return user balance', async () => {
       const user = {
         _id: userId,
         balance: 100,
-        retryTokens: 5,
         save: mockUserModel.save,
       };
       mockUserModel.exec.mockResolvedValueOnce(user);
 
       const result = await service.getUserBalance(userId);
 
-      expect(result).toEqual({ balance: 100, retryTokens: 5 });
+      expect(result).toEqual({ balance: 100 });
     });
 
     it('should throw BadRequestException if user not found', async () => {

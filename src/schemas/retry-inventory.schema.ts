@@ -12,8 +12,7 @@ export class RetryInventory {
   @Prop({ required: true, default: 0 })
   retryCount: number;
 
-  @Prop({ type: Date, default: Date.now })
-  updatedAt: Date;
+
 }
 
 export const RetryInventorySchema = SchemaFactory.createForClass(RetryInventory);

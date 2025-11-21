@@ -2,12 +2,13 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../schemas/user.schema';
 import { WalletService } from './wallet.service';
-import { RedisModule } from '../database/redis.module';
+import { RetryModule } from '../retry/retry.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     RedisModule,
+    RetryModule,
   ],
   providers: [WalletService],
   exports: [WalletService],
