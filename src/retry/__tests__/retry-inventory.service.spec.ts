@@ -23,9 +23,8 @@ describe('RetryInventoryService', () => {
         {
           provide: getModelToken(RetryInventory.name),
           useValue: {
-            findById: jest.fn(),
-            findByIdAndUpdate: jest.fn(),
-            db: { startSession: jest.fn() },
+            findOne: jest.fn(),
+            findOneAndUpdate: jest.fn(),
           },
         },
       ],
@@ -42,34 +41,22 @@ describe('RetryInventoryService', () => {
   describe('addRetries', () => {
     it('should add retries to a user', async () => {
       const retryInventory = mockRetryInventory(5);
-      jest.spyOn(retryInventoryModel, 'findByIdAndUpdate').mockReturnValue({
+      jest.spyOn(retryInventoryModel, 'findOneAndUpdate').mockReturnValue({
         exec: jest.fn().mockResolvedValue(retryInventory),
-      } as any);
-      jest.spyOn(retryInventoryModel.db, 'startSession').mockReturnValue({
-        startTransaction: jest.fn(),
-        commitTransaction: jest.fn(),
-        abortTransaction: jest.fn(),
-        endSession: jest.fn(),
       } as any);
 
       const result = await service.addRetries('someUserId', 3);
       expect(result).toEqual(retryInventory);
-      expect(retryInventoryModel.findByIdAndUpdate).toHaveBeenCalledWith(
-        'someUserId',
+      expect(retryInventoryModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { userId: 'someUserId' },
         { $inc: { retries: 3 } },
-        { new: true, session: expect.any(Object) }
+        { new: true }
       );
     });
 
     it('should throw BadRequestException if retry inventory not found', async () => {
-      jest.spyOn(retryInventoryModel, 'findByIdAndUpdate').mockReturnValue({
+      jest.spyOn(retryInventoryModel, 'findOneAndUpdate').mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
-      } as any);
-      jest.spyOn(retryInventoryModel.db, 'startSession').mockReturnValue({
-        startTransaction: jest.fn(),
-        commitTransaction: jest.fn(),
-        abortTransaction: jest.fn(),
-        endSession: jest.fn(),
       } as any);
 
       await expect(service.addRetries('nonExistentUser', 1)).rejects.toThrow(
@@ -81,33 +68,20 @@ describe('RetryInventoryService', () => {
   describe('deductRetries', () => {
     it('should deduct retries from a user', async () => {
       const retryInventory = mockRetryInventory(5);
-      jest.spyOn(retryInventoryModel, 'findById').mockReturnValue({
-        session: jest.fn().mockReturnThis(),
+      jest.spyOn(retryInventoryModel, 'findOne').mockReturnValue({
         exec: jest.fn().mockResolvedValue(retryInventory),
-      } as any);
-      jest.spyOn(retryInventoryModel.db, 'startSession').mockReturnValue({
-        startTransaction: jest.fn(),
-        commitTransaction: jest.fn(),
-        abortTransaction: jest.fn(),
-        endSession: jest.fn(),
       } as any);
 
       const result = await service.deductRetries('someUserId', 3);
+      expect(retryInventoryModel.findOne).toHaveBeenCalledWith({ userId: 'someUserId' });
       expect(retryInventory.retries).toBe(2);
       expect(retryInventory.save).toHaveBeenCalled();
       expect(result).toEqual(retryInventory);
     });
 
     it('should throw BadRequestException if retry inventory not found', async () => {
-      jest.spyOn(retryInventoryModel, 'findById').mockReturnValue({
-        session: jest.fn().mockReturnThis(),
+      jest.spyOn(retryInventoryModel, 'findOne').mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
-      } as any);
-      jest.spyOn(retryInventoryModel.db, 'startSession').mockReturnValue({
-        startTransaction: jest.fn(),
-        commitTransaction: jest.fn(),
-        abortTransaction: jest.fn(),
-        endSession: jest.fn(),
       } as any);
 
       await expect(service.deductRetries('nonExistentUser', 1)).rejects.toThrow(
@@ -117,15 +91,8 @@ describe('RetryInventoryService', () => {
 
     it('should throw BadRequestException if insufficient retries', async () => {
       const retryInventory = mockRetryInventory(2);
-      jest.spyOn(retryInventoryModel, 'findById').mockReturnValue({
-        session: jest.fn().mockReturnThis(),
+      jest.spyOn(retryInventoryModel, 'findOne').mockReturnValue({
         exec: jest.fn().mockResolvedValue(retryInventory),
-      } as any);
-      jest.spyOn(retryInventoryModel.db, 'startSession').mockReturnValue({
-        startTransaction: jest.fn(),
-        commitTransaction: jest.fn(),
-        abortTransaction: jest.fn(),
-        endSession: jest.fn(),
       } as any);
 
       await expect(service.deductRetries('someUserId', 3)).rejects.toThrow(
@@ -137,16 +104,17 @@ describe('RetryInventoryService', () => {
   describe('getRetries', () => {
     it('should return the current retry count for a user', async () => {
       const retryInventory = mockRetryInventory(10);
-      jest.spyOn(retryInventoryModel, 'findById').mockReturnValue({
+      jest.spyOn(retryInventoryModel, 'findOne').mockReturnValue({
         exec: jest.fn().mockResolvedValue(retryInventory),
       } as any);
 
       const result = await service.getRetries('someUserId');
+      expect(retryInventoryModel.findOne).toHaveBeenCalledWith({ userId: 'someUserId' });
       expect(result).toBe(10);
     });
 
     it('should throw BadRequestException if retry inventory not found', async () => {
-      jest.spyOn(retryInventoryModel, 'findById').mockReturnValue({
+      jest.spyOn(retryInventoryModel, 'findOne').mockReturnValue({
         exec: jest.fn().mockResolvedValue(null),
       } as any);
 

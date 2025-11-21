@@ -7,7 +7,6 @@ import { RetryModule } from '../retry/retry.module';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    RedisModule,
     RetryModule,
   ],
   providers: [WalletService],
