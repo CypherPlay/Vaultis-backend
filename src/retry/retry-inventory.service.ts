@@ -53,4 +53,24 @@ export class RetryInventoryService {
     const retryInventory = await this.retryInventoryModel.findOne({ userId: userId }).exec();
     return retryInventory ? retryInventory.retryCount : 0;
   }
+
+  async verifyOnChainPurchase(
+    userId: string,
+    transactionHash: string,
+    expectedAmount: number,
+  ): Promise<RetryInventoryDocument> {
+    // Placeholder for blockchain interaction:
+    // 1. Connect to the blockchain (e.g., using web3.js or ethers.js).
+    // 2. Retrieve the transaction details using the transactionHash.
+    // 3. Verify that the transaction was successful and matches the expectedAmount
+    //    and that the recipient address corresponds to the user's wallet.
+    // 4. Check for replay attacks (e.g., by storing processed transaction hashes).
+
+    // For now, we'll assume the on-chain verification is successful and
+    // directly update the user's retry inventory.
+    // In a real-world scenario, this part would involve actual blockchain RPC calls.
+
+    // After successful on-chain verification, update the retry balance in the database.
+    return this.addRetries(userId, expectedAmount);
+  }
 }
