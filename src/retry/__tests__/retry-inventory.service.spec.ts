@@ -135,7 +135,6 @@ describe('RetryInventoryService', () => {
       const userId = 'testUserId';
       const transactionHash = '0x123abc';
       const expectedAmount = 5;
-      const initialRetryInventory = mockRetryInventory(10);
       const updatedRetryInventory = mockRetryInventory(15);
 
       jest.spyOn(service, 'addRetries').mockResolvedValue(updatedRetryInventory);
@@ -148,6 +147,36 @@ describe('RetryInventoryService', () => {
 
       expect(service.addRetries).toHaveBeenCalledWith(userId, expectedAmount);
       expect(result).toEqual(updatedRetryInventory);
+    });
+
+    it('should throw BadRequestException for negative expectedAmount', async () => {
+      const userId = 'testUserId';
+      const transactionHash = '0x123abc';
+      const expectedAmount = -1;
+
+      await expect(
+        service.verifyOnChainPurchase(userId, transactionHash, expectedAmount),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for zero expectedAmount', async () => {
+      const userId = 'testUserId';
+      const transactionHash = '0x123abc';
+      const expectedAmount = 0;
+
+      await expect(
+        service.verifyOnChainPurchase(userId, transactionHash, expectedAmount),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for non-integer expectedAmount', async () => {
+      const userId = 'testUserId';
+      const transactionHash = '0x123abc';
+      const expectedAmount = 2.5;
+
+      await expect(
+        service.verifyOnChainPurchase(userId, transactionHash, expectedAmount),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });
