@@ -239,10 +239,34 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
 
   public async processWebhookEvent(payload: BlockchainWebhookDto): Promise<void> {
     this.logger.log(`Processing webhook event of type: ${payload.eventType}`);
-    // TODO: Implement specific handling based on payload.eventType
-    // For example:
-    // if (payload.eventType === 'purchaseRetry') {
-    //   // Extract relevant data from payload and call handlePurchaseRetryEvent
-    // }
+
+    switch (payload.eventType) {
+      case 'purchaseRetry':
+        await this.handleWebhookPurchaseRetryEvent(payload.payload);
+        break;
+      default:
+        this.logger.warn(`Unhandled webhook event type: ${payload.eventType}`);
+        break;
+    }
+  }
+
+  private async handleWebhookPurchaseRetryEvent(data: Record<string, any>): Promise<void> {
+    const { userAddress, quantity, transactionHash } = data;
+
+    if (!userAddress || !quantity || !transactionHash) {
+      this.logger.error('Missing data for purchaseRetry webhook event. Required: userAddress, quantity, transactionHash.');
+      throw new BadRequestException('Missing data for purchaseRetry webhook event.');
+    }
+
+    // Create a minimal ethers.Log-like object for handlePurchaseRetryEvent
+    const mockEventLog = {
+      transactionHash: transactionHash,
+      // Add other properties if handlePurchaseRetryEvent starts using them
+    } as ethers.Log;
+
+    // Convert quantity to BigInt as expected by handlePurchaseRetryEvent
+    const quantityBigInt = BigInt(quantity);
+
+    await this.handlePurchaseRetryEvent(userAddress, quantityBigInt, mockEventLog);
   }
 }
