@@ -1,27 +1,45 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ClientSession } from 'mongoose';
 import { RetryInventory, RetryInventoryDocument } from '../schemas/retry-inventory.schema';
+import { ProcessedTransaction, ProcessedTransactionDocument } from '../schemas/processed-transaction.schema';
 
 @Injectable()
 export class RetryInventoryService {
   constructor(
     @InjectModel(RetryInventory.name)
     private retryInventoryModel: Model<RetryInventoryDocument>,
+    @InjectModel(ProcessedTransaction.name)
+    private processedTransactionModel: Model<ProcessedTransactionDocument>,
   ) {}
 
-  async addRetries(userId: string, amount: number): Promise<RetryInventoryDocument> {
+  async addRetries(userId: string, amount: number, transactionHash?: string): Promise<RetryInventoryDocument> {
     if (amount <= 0 || !Number.isInteger(amount)) {
       throw new BadRequestException('Amount must be a positive integer');
     }
 
-    return this.retryInventoryModel
+    if (transactionHash) {
+      // Check for replay attacks
+      const existingTransaction = await this.processedTransactionModel.findOne({ transactionHash }).exec();
+      if (existingTransaction) {
+        throw new ConflictException(`Transaction ${transactionHash} has already been processed.`);
+      }
+    }
+
+    const retryInventory = await this.retryInventoryModel
       .findOneAndUpdate(
         { userId: userId },
         { $inc: { retryCount: amount }, updatedAt: new Date() },
         { new: true, upsert: true },
       )
       .exec();
+
+    if (transactionHash) {
+      // Mark transaction as processed only after successful retry addition
+      await this.processedTransactionModel.create({ transactionHash });
+    }
+
+    return retryInventory;
   }
 
   async deductRetries(userId: string, amount: number, session?: ClientSession): Promise<RetryInventoryDocument> {
@@ -71,6 +89,6 @@ export class RetryInventoryService {
     // In a real-world scenario, this part would involve actual blockchain RPC calls.
 
     // After successful on-chain verification, update the retry balance in the database.
-    return this.addRetries(userId, expectedAmount);
+    return this.addRetries(userId, expectedAmount, transactionHash);
   }
 }
