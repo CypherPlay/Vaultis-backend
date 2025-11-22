@@ -253,9 +253,43 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
   private async handleWebhookPurchaseRetryEvent(data: Record<string, any>): Promise<void> {
     const { userAddress, quantity, transactionHash } = data;
 
-    if (!userAddress || !quantity || !transactionHash) {
-      this.logger.error('Missing data for purchaseRetry webhook event. Required: userAddress, quantity, transactionHash.');
-      throw new BadRequestException('Missing data for purchaseRetry webhook event.');
+    if (!userAddress) {
+      this.logger.error('Missing userAddress for purchaseRetry webhook event.');
+      throw new BadRequestException('Missing userAddress for purchaseRetry webhook event.');
+    }
+    if (!quantity) {
+      this.logger.error('Missing quantity for purchaseRetry webhook event.');
+      throw new BadRequestException('Missing quantity for purchaseRetry webhook event.');
+    }
+    if (!transactionHash) {
+      this.logger.error('Missing transactionHash for purchaseRetry webhook event.');
+      throw new BadRequestException('Missing transactionHash for purchaseRetry webhook event.');
+    }
+
+    // 1. Validate userAddress
+    if (!ethers.isAddress(userAddress)) {
+      this.logger.error(`Invalid userAddress format for purchaseRetry webhook event: ${userAddress}`);
+      throw new BadRequestException('Invalid userAddress format.');
+    }
+
+    // 2. Validate and convert quantity to BigInt
+    let quantityBigInt: bigint;
+    if (typeof quantity === 'number' || (typeof quantity === 'string' && /^\d+$/.test(quantity))) {
+      try {
+        quantityBigInt = BigInt(quantity);
+      } catch (error) {
+        this.logger.error(`Invalid quantity format for purchaseRetry webhook event: ${quantity}. Error: ${error.message}`);
+        throw new BadRequestException('Invalid quantity format.');
+      }
+    } else {
+      this.logger.error(`Invalid quantity type or format for purchaseRetry webhook event: ${quantity}`);
+      throw new BadRequestException('Invalid quantity format.');
+    }
+
+    // 3. Validate transactionHash format (0x-prefixed hex string, 66 chars for 32-byte hash)
+    if (!ethers.isHexString(transactionHash, 32)) {
+      this.logger.error(`Invalid transactionHash format for purchaseRetry webhook event: ${transactionHash}`);
+      throw new BadRequestException('Invalid transactionHash format.');
     }
 
     // Create a minimal ethers.Log-like object for handlePurchaseRetryEvent
@@ -263,9 +297,6 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
       transactionHash: transactionHash,
       // Add other properties if handlePurchaseRetryEvent starts using them
     } as ethers.Log;
-
-    // Convert quantity to BigInt as expected by handlePurchaseRetryEvent
-    const quantityBigInt = BigInt(quantity);
 
     await this.handlePurchaseRetryEvent(userAddress, quantityBigInt, mockEventLog);
   }
