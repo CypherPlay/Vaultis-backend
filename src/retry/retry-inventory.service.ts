@@ -6,11 +6,21 @@ import { ProcessedTransaction, ProcessedTransactionDocument } from '../schemas/p
 
 @Injectable()
 export class RetryInventoryService {
+import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, ClientSession, Connection } from 'mongoose';
+import { InjectConnection } from '@nestjs/mongoose';
+import { RetryInventory, RetryInventoryDocument } from '../schemas/retry-inventory.schema';
+import { ProcessedTransaction, ProcessedTransactionDocument } from '../schemas/processed-transaction.schema';
+
+@Injectable()
+export class RetryInventoryService {
   constructor(
     @InjectModel(RetryInventory.name)
     private retryInventoryModel: Model<RetryInventoryDocument>,
     @InjectModel(ProcessedTransaction.name)
     private processedTransactionModel: Model<ProcessedTransactionDocument>,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   async addRetries(userId: string, amount: number, transactionHash?: string): Promise<RetryInventoryDocument> {
@@ -18,28 +28,44 @@ export class RetryInventoryService {
       throw new BadRequestException('Amount must be a positive integer');
     }
 
-    if (transactionHash) {
-      // Check for replay attacks
-      const existingTransaction = await this.processedTransactionModel.findOne({ transactionHash }).exec();
-      if (existingTransaction) {
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      let retryInventory: RetryInventoryDocument;
+
+      if (transactionHash) {
+        // Check for replay attacks within the transaction
+        const existingTransaction = await this.processedTransactionModel.findOne({ transactionHash }).session(session);
+        if (existingTransaction) {
+          throw new ConflictException(`Transaction ${transactionHash} has already been processed.`);
+        }
+      }
+
+      retryInventory = await this.retryInventoryModel
+        .findOneAndUpdate(
+          { userId: userId },
+          { $inc: { retryCount: amount }, updatedAt: new Date() },
+          { new: true, upsert: true, session: session },
+        )
+        .exec();
+
+      if (transactionHash) {
+        // Mark transaction as processed only after successful retry addition within the same transaction
+        await this.processedTransactionModel.create([{ transactionHash }], { session });
+      }
+
+      await session.commitTransaction();
+      return retryInventory;
+    } catch (error) {
+      await session.abortTransaction();
+      if (error.code === 11000) { // Duplicate key error for transactionHash
         throw new ConflictException(`Transaction ${transactionHash} has already been processed.`);
       }
+      throw error;
+    } finally {
+      session.endSession();
     }
-
-    const retryInventory = await this.retryInventoryModel
-      .findOneAndUpdate(
-        { userId: userId },
-        { $inc: { retryCount: amount }, updatedAt: new Date() },
-        { new: true, upsert: true },
-      )
-      .exec();
-
-    if (transactionHash) {
-      // Mark transaction as processed only after successful retry addition
-      await this.processedTransactionModel.create({ transactionHash });
-    }
-
-    return retryInventory;
   }
 
   async deductRetries(userId: string, amount: number, session?: ClientSession): Promise<RetryInventoryDocument> {
