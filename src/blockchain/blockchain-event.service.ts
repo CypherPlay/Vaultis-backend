@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 import { RetryInventoryService } from '../retry/retry-inventory.service';
+import { BlockchainWebhookDto } from './dto/blockchain-webhook.dto';
 
 @Injectable()
 export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
@@ -185,7 +186,7 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      await this.provider.detectNetwork();
+      await this.provider.getBlockNumber();
       if (!this._isHealthy) {
         this.logger.log('Blockchain connection restored and healthy.');
         this._isHealthy = true;
@@ -198,7 +199,25 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async handlePurchaseRetryEvent(userAddress: string, quantity: bigint, event: ethers.Log) {
+  public async getLatestBlockNumber(): Promise<number> {
+    if (!this.provider) {
+      throw new Error('Blockchain provider is not initialized.');
+    }
+    return this.provider.getBlockNumber();
+  }
+
+  public isConnected(): boolean {
+    return this._isConnected;
+  }
+
+  public getContract(): ethers.Contract {
+    if (!this.contract) {
+      throw new Error('Blockchain contract is not initialized.');
+    }
+    return this.contract;
+  }
+
+  public async handlePurchaseRetryEvent(userAddress: string, quantity: bigint, event: ethers.Log) {
     this.logger.log(`Received purchaseRetry event: userAddress=${userAddress}, quantity=${quantity.toString()}, transactionHash=${event.transactionHash}`);
     if (!ethers.isAddress(userAddress)) {
       this.logger.error(`Invalid userAddress received: ${userAddress}`);
@@ -216,5 +235,69 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       this.logger.error(`Failed to process purchaseRetry event for user ${userAddress} (transaction ${event.transactionHash}): ${error.message}`);
     }
+  }
+
+  public async processWebhookEvent(payload: BlockchainWebhookDto): Promise<void> {
+    this.logger.log(`Processing webhook event of type: ${payload.eventType}`);
+
+    switch (payload.eventType) {
+      case 'purchaseRetry':
+        await this.handleWebhookPurchaseRetryEvent(payload.payload);
+        break;
+      default:
+        this.logger.warn(`Unhandled webhook event type: ${payload.eventType}`);
+        break;
+    }
+  }
+
+  private async handleWebhookPurchaseRetryEvent(data: Record<string, any>): Promise<void> {
+    const { userAddress, quantity, transactionHash } = data;
+
+    if (!userAddress) {
+      this.logger.error('Missing userAddress for purchaseRetry webhook event.');
+      throw new BadRequestException('Missing userAddress for purchaseRetry webhook event.');
+    }
+    if (!quantity) {
+      this.logger.error('Missing quantity for purchaseRetry webhook event.');
+      throw new BadRequestException('Missing quantity for purchaseRetry webhook event.');
+    }
+    if (!transactionHash) {
+      this.logger.error('Missing transactionHash for purchaseRetry webhook event.');
+      throw new BadRequestException('Missing transactionHash for purchaseRetry webhook event.');
+    }
+
+    // 1. Validate userAddress
+    if (!ethers.isAddress(userAddress)) {
+      this.logger.error(`Invalid userAddress format for purchaseRetry webhook event: ${userAddress}`);
+      throw new BadRequestException('Invalid userAddress format.');
+    }
+
+    // 2. Validate and convert quantity to BigInt
+    let quantityBigInt: bigint;
+    if (typeof quantity === 'number' || (typeof quantity === 'string' && /^\d+$/.test(quantity))) {
+      try {
+        quantityBigInt = BigInt(quantity);
+      } catch (error) {
+        this.logger.error(`Invalid quantity format for purchaseRetry webhook event: ${quantity}. Error: ${error.message}`);
+        throw new BadRequestException('Invalid quantity format.');
+      }
+    } else {
+      this.logger.error(`Invalid quantity type or format for purchaseRetry webhook event: ${quantity}`);
+      throw new BadRequestException('Invalid quantity format.');
+    }
+
+    // 3. Validate transactionHash format (0x-prefixed hex string, 66 chars for 32-byte hash)
+    if (!ethers.isHexString(transactionHash, 32)) {
+      this.logger.error(`Invalid transactionHash format for purchaseRetry webhook event: ${transactionHash}`);
+      throw new BadRequestException('Invalid transactionHash format.');
+    }
+
+    // Create a minimal ethers.Log-like object for handlePurchaseRetryEvent
+    const mockEventLog = {
+      transactionHash: transactionHash,
+      // Add other properties if handlePurchaseRetryEvent starts using them
+    } as ethers.Log;
+
+    await this.handlePurchaseRetryEvent(userAddress, quantityBigInt, mockEventLog);
   }
 }

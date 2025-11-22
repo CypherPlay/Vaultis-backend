@@ -13,6 +13,7 @@ import { CacheModule, CacheInterceptor } from '@nestjs/cache-manager';
 import Keyv from 'keyv';
 import KeyvRedis from '@keyv/redis';
 import { BlockchainModule } from './blockchain/blockchain.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -29,6 +30,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     RetryModule,
     BlockchainModule,
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     CacheModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {

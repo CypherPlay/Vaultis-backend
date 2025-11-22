@@ -1,13 +1,5 @@
 import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, ClientSession } from 'mongoose';
-import { RetryInventory, RetryInventoryDocument } from '../schemas/retry-inventory.schema';
-import { ProcessedTransaction, ProcessedTransactionDocument } from '../schemas/processed-transaction.schema';
-
-@Injectable()
-export class RetryInventoryService {
-import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import { Model, ClientSession, Connection } from 'mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
 import { RetryInventory, RetryInventoryDocument } from '../schemas/retry-inventory.schema';
