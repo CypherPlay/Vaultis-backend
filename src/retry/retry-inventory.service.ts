@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, ClientSession } from 'mongoose';
 import { RetryInventory, RetryInventoryDocument } from '../schemas/retry-inventory.schema';
 
 @Injectable()
@@ -24,7 +24,7 @@ export class RetryInventoryService {
       .exec();
   }
 
-  async deductRetries(userId: string, amount: number): Promise<RetryInventoryDocument> {
+  async deductRetries(userId: string, amount: number, session?: ClientSession): Promise<RetryInventoryDocument> {
     if (amount <= 0 || !Number.isInteger(amount)) {
       throw new BadRequestException('Amount must be a positive integer');
     }
@@ -33,7 +33,7 @@ export class RetryInventoryService {
       .findOneAndUpdate(
         { userId: userId, retryCount: { $gte: amount } },
         { $inc: { retryCount: -amount }, updatedAt: new Date() },
-        { new: true },
+        { new: true, session: session },
       )
       .exec();
 

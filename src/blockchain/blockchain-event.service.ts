@@ -8,6 +8,7 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(BlockchainEventService.name);
   private provider: ethers.JsonRpcProvider;
   private contract: ethers.Contract;
+  private boundHandlePurchaseRetryEvent: ((...args: any[]) => void) | null;
 
   constructor(
     private readonly configService: ConfigService,
@@ -31,14 +32,14 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
       const contractAbi = this.configService.get<any[]>('BLOCKCHAIN_CONTRACT_ABI'); // Assuming ABI is loaded from config
 
       if (!rpcUrl || !contractAddress || !contractAbi) {
-        this.logger.error('Missing blockchain configuration. Please check BLOCKCHAIN_RPC_URL, BLOCKCHAIN_CONTRACT_ADDRESS, and BLOCKCHAIN_CONTRACT_ABI.');
-        return;
+        throw new Error('Missing blockchain configuration: please set BLOCKCHAIN_RPC_URL, BLOCKCHAIN_CONTRACT_ADDRESS and BLOCKCHAIN_CONTRACT_ABI');
       }
 
       this.provider = new ethers.JsonRpcProvider(rpcUrl);
       this.contract = new ethers.Contract(contractAddress, contractAbi, this.provider);
 
-      this.contract.on('purchaseRetry', this.handlePurchaseRetryEvent.bind(this));
+      this.boundHandlePurchaseRetryEvent = this.handlePurchaseRetryEvent.bind(this);
+      this.contract.on('purchaseRetry', this.boundHandlePurchaseRetryEvent!);
       this.logger.log('Connected to blockchain and listening for purchaseRetry events.');
     } catch (error) {
       this.logger.error('Failed to connect to blockchain:', error.message);
@@ -46,18 +47,28 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
   }
 
   private disconnectFromBlockchain() {
-    if (this.contract) {
-      this.contract.off('purchaseRetry', this.handlePurchaseRetryEvent.bind(this));
+    if (this.contract && this.boundHandlePurchaseRetryEvent) {
+      this.contract.off('purchaseRetry', this.boundHandlePurchaseRetryEvent);
+      this.boundHandlePurchaseRetryEvent = null; // Clear the reference
       this.logger.log('Disconnected from blockchain events.');
     }
   }
 
-  private async handlePurchaseRetryEvent(userAddress: string, quantity: ethers.BigNumber, event: ethers.Event) {
+  private async handlePurchaseRetryEvent(userAddress: string, quantity: bigint, event: ethers.Log) {
     this.logger.log(`Received purchaseRetry event: userAddress=${userAddress}, quantity=${quantity.toString()}`);
+    if (!ethers.isAddress(userAddress)) {
+      this.logger.error(`Invalid userAddress received: ${userAddress}`);
+      return;
+    }
+
+    if (quantity > BigInt(Number.MAX_SAFE_INTEGER) || quantity < BigInt(Number.MIN_SAFE_INTEGER)) {
+      this.logger.error(`Quantity ${quantity.toString()} is out of safe integer range for user ${userAddress}.`);
+      // Depending on requirements, you might throw an error or handle it differently
+      return;
+    }
+
     try {
-      // In a real application, you would likely map userAddress to your internal userId
-      // For now, let's assume userAddress can be directly used or we have a mapping service
-      await this.retryInventoryService.addRetries(userAddress, quantity.toNumber());
+      await this.retryInventoryService.addRetries(userAddress, Number(quantity));
       this.logger.log(`Successfully added ${quantity.toString()} retries for user ${userAddress}`);
     } catch (error) {
       this.logger.error(`Failed to process purchaseRetry event for user ${userAddress}: ${error.message}`);
