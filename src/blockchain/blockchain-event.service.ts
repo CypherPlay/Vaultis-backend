@@ -1,4 +1,5 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 import { RetryInventoryService } from '../retry/retry-inventory.service';
@@ -33,6 +34,45 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
   onModuleDestroy() {
     this.logger.log('Shutting down BlockchainEventService...');
     this.stop();
+  }
+
+  public async verifySignature(rawBody: string, signature: string, timestamp: string): Promise<boolean> {
+    const secret = this.configService.get<string>('WEBHOOK_SECRET');
+    if (!secret) {
+      this.logger.error('WEBHOOK_SECRET is not configured.');
+      throw new UnauthorizedException('Webhook secret not configured.');
+    }
+
+    // 1. Check timestamp freshness
+    const toleranceSeconds = this.configService.get<number>('WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS', 300); // Default to 5 minutes
+    const now = Math.floor(Date.now() / 1000);
+    const receivedTimestamp = parseInt(timestamp, 10);
+
+    if (isNaN(receivedTimestamp) || Math.abs(now - receivedTimestamp) > toleranceSeconds) {
+      this.logger.warn(`Webhook timestamp out of tolerance. Received: ${receivedTimestamp}, Now: ${now}`);
+      throw new BadRequestException('Webhook timestamp is too old or invalid.');
+    }
+
+    // 2. Verify signature (HMAC-SHA256)
+    const signedPayload = `${timestamp}.${rawBody}`;
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(signedPayload)
+      .digest('hex');
+
+    // Constant-time comparison to prevent timing attacks
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(signature, 'utf8'),
+      Buffer.from(expectedSignature, 'utf8'),
+    );
+
+    if (!isValid) {
+      this.logger.warn('Webhook signature verification failed.');
+      throw new UnauthorizedException('Invalid webhook signature.');
+    }
+
+    this.logger.debug('Webhook signature and timestamp verified successfully.');
+    return true;
   }
 
   public start() {
