@@ -186,7 +186,7 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      await this.provider._detectNetwork();
+      await this.provider.getBlockNumber();
       if (!this._isHealthy) {
         this.logger.log('Blockchain connection restored and healthy.');
         this._isHealthy = true;
