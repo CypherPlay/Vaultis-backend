@@ -42,7 +42,9 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
       this.contract.on('purchaseRetry', this.boundHandlePurchaseRetryEvent!);
       this.logger.log('Connected to blockchain and listening for purchaseRetry events.');
     } catch (error) {
-      this.logger.error('Failed to connect to blockchain:', error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('Failed to connect to blockchain:', errorMessage);
+      throw new Error(`Blockchain connection failed: ${errorMessage}`);
     }
   }
 
