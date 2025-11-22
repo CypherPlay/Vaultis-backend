@@ -26,6 +26,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     RiddleModule,
     WalletModule,
     RetryModule,
+    BlockchainModule,
     ConfigModule.forRoot({ isGlobal: true }),
     CacheModule.registerAsync({
       imports: [ConfigModule],
