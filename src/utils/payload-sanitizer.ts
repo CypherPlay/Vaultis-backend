@@ -22,17 +22,25 @@ export class PayloadSanitizer {
     const sanitizedPayload = cloneDeep(payload);
 
     const redact = (obj: any) => {
-      for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-          const value = obj[key];
+      if (Array.isArray(obj)) {
+        for (let i = 0; i < obj.length; i++) {
+          if (typeof obj[i] === 'object' && obj[i] !== null) {
+            redact(obj[i]);
+          }
+        }
+      } else if (typeof obj === 'object' && obj !== null) {
+        for (const key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            const value = obj[key];
 
-          if (typeof value === 'object' && value !== null) {
-            redact(value);
-          } else {
-            for (const pattern of redactPatterns) {
-              if (pattern.test(key)) {
-                obj[key] = '[REDACTED]';
-                break;
+            if (typeof value === 'object' && value !== null) {
+              redact(value);
+            } else {
+              for (const pattern of redactPatterns) {
+                if (pattern.test(key)) {
+                  obj[key] = '[REDACTED]';
+                  break;
+                }
               }
             }
           }
@@ -42,10 +50,9 @@ export class PayloadSanitizer {
 
     redact(sanitizedPayload);
 
-    // Enforce max log length (simple truncation for now, can be more sophisticated)
     const payloadString = JSON.stringify(sanitizedPayload);
     if (payloadString.length > maxLogLength) {
-      return { sanitized: payloadString.substring(0, maxLogLength) + '... [TRUNCATED]' };
+      sanitizedPayload.__wasTruncated = true;
     }
 
     return sanitizedPayload;

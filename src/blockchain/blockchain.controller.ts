@@ -49,8 +49,13 @@ export class BlockchainController {
       // 2. Input validation for the webhook payload is handled by @UsePipes and BlockchainWebhookDto
 
       // 3. Modify logging to avoid printing the entire webhook payload
-      const sanitizedPayload = PayloadSanitizer.sanitize(payload);
-      this.logger.debug(`Processing webhook event. ${logContext}, Sanitized Payload: ${JSON.stringify(sanitizedPayload)}`);
+      const maxLogLength = this.configService.get<number>('WEBHOOK_LOG_MAX_LENGTH', 1000);
+      const sanitizedPayload = PayloadSanitizer.sanitize(payload, undefined, maxLogLength);
+      let payloadToLog = JSON.stringify(sanitizedPayload);
+      if (sanitizedPayload.__wasTruncated) {
+        payloadToLog = payloadToLog.substring(0, maxLogLength) + '... [TRUNCATED]';
+      }
+      this.logger.debug(`Processing webhook event. ${logContext}, Sanitized Payload: ${payloadToLog}`);
 
       await this.blockchainEventService.processWebhookEvent(payload);
       this.logger.log(`Successfully processed webhook event. ${logContext}`);

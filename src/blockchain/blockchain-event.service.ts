@@ -61,10 +61,13 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
       .digest('hex');
 
     // Constant-time comparison to prevent timing attacks
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(signature, 'utf8'),
-      Buffer.from(expectedSignature, 'utf8'),
-    );
+    const signatureBuffer = Buffer.from(signature || '', 'utf8');
+    const expectedSignatureBuffer = Buffer.from(expectedSignature || '', 'utf8');
+
+    let isValid = false;
+    if (signatureBuffer.length === expectedSignatureBuffer.length) {
+      isValid = crypto.timingSafeEqual(signatureBuffer, expectedSignatureBuffer);
+    }
 
     if (!isValid) {
       this.logger.warn('Webhook signature verification failed.');
