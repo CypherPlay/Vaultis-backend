@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 import { RetryInventoryService } from '../retry/retry-inventory.service';
+import { BlockchainWebhookDto } from './dto/blockchain-webhook.dto';
 
 @Injectable()
 export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
@@ -185,7 +186,7 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      await this.provider.detectNetwork();
+      await this.provider._detectNetwork();
       if (!this._isHealthy) {
         this.logger.log('Blockchain connection restored and healthy.');
         this._isHealthy = true;
@@ -198,7 +199,25 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async handlePurchaseRetryEvent(userAddress: string, quantity: bigint, event: ethers.Log) {
+  public async getLatestBlockNumber(): Promise<number> {
+    if (!this.provider) {
+      throw new Error('Blockchain provider is not initialized.');
+    }
+    return this.provider.getBlockNumber();
+  }
+
+  public isConnected(): boolean {
+    return this._isConnected;
+  }
+
+  public getContract(): ethers.Contract {
+    if (!this.contract) {
+      throw new Error('Blockchain contract is not initialized.');
+    }
+    return this.contract;
+  }
+
+  public async handlePurchaseRetryEvent(userAddress: string, quantity: bigint, event: ethers.Log) {
     this.logger.log(`Received purchaseRetry event: userAddress=${userAddress}, quantity=${quantity.toString()}, transactionHash=${event.transactionHash}`);
     if (!ethers.isAddress(userAddress)) {
       this.logger.error(`Invalid userAddress received: ${userAddress}`);
@@ -216,5 +235,14 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       this.logger.error(`Failed to process purchaseRetry event for user ${userAddress} (transaction ${event.transactionHash}): ${error.message}`);
     }
+  }
+
+  public async processWebhookEvent(payload: BlockchainWebhookDto): Promise<void> {
+    this.logger.log(`Processing webhook event of type: ${payload.eventType}`);
+    // TODO: Implement specific handling based on payload.eventType
+    // For example:
+    // if (payload.eventType === 'purchaseRetry') {
+    //   // Extract relevant data from payload and call handlePurchaseRetryEvent
+    // }
   }
 }
