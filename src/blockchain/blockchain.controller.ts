@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Headers, Logger, Req, RawBodyRequest, UsePipes, ValidationPipe, HttpException, UnauthorizedException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { BlockchainEventService } from './blockchain-event.service';
 import { BlockchainWebhookDto } from './dto/blockchain-webhook.dto';
