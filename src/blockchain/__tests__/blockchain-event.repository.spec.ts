@@ -22,15 +22,24 @@ describe('BlockchainEventRepository', () => {
         BlockchainEventRepository,
         {
           provide: getModelToken(BlockchainEvent.name),
-          useValue: {
-            new: jest.fn().mockResolvedValue(mockBlockchainEvent),
-            constructor: jest.fn().mockResolvedValue(mockBlockchainEvent),
-            findOne: jest.fn(),
-            find: jest.fn(),
-            sort: jest.fn().mockReturnThis(),
-            exec: jest.fn(),
-            save: jest.fn(),
-          },
+          useValue: jest.fn().mockImplementation(() => ({
+            save: jest.fn().mockResolvedValue(mockBlockchainEvent),
+          })),
+        },
+      ],
+    }).compile();
+
+    repository = module.get<BlockchainEventRepository>(BlockchainEventRepository);
+    model = module.get<Model<BlockchainEventDocument>>(
+      getModelToken(BlockchainEvent.name),
+    );
+
+    // Attach static methods to the mock model
+    (model as any).findOne = jest.fn();
+    (model as any).find = jest.fn();
+    (model as any).sort = jest.fn().mockReturnThis();
+    (model as any).exec = jest.fn();
+    (model as any).aggregate = jest.fn(); // Added aggregate as it's a common static method
         },
       ],
     }).compile();
@@ -46,39 +55,36 @@ describe('BlockchainEventRepository', () => {
   });
 
   it('should create a blockchain event', async () => {
-    jest.spyOn(model, 'save').mockResolvedValue(mockBlockchainEvent as BlockchainEventDocument);
-    jest.spyOn(model, 'constructor').mockImplementation(() => ({ save: jest.fn().mockResolvedValue(mockBlockchainEvent) }));
-
-    const result = await repository.create(mockBlockchainEvent);
-    expect(result).toEqual(mockBlockchainEvent);
+    const createdEvent = await repository.create(mockBlockchainEvent);
+    expect(createdEvent).toEqual(mockBlockchainEvent);
   });
 
   it('should find an event by txHash', async () => {
-    jest.spyOn(model, 'findOne').mockReturnValue({ exec: jest.fn().mockResolvedValue(mockBlockchainEvent) } as any);
+    (model.find as jest.Mock).mockReturnValue({ exec: jest.fn().mockResolvedValue([mockBlockchainEvent]) });
     const result = await repository.findByTxHash('0x123');
-    expect(result).toEqual(mockBlockchainEvent);
+    expect(result).toEqual([mockBlockchainEvent]);
   });
 
   it('should find events by userId', async () => {
-    jest.spyOn(model, 'find').mockReturnValue({ exec: jest.fn().mockResolvedValue([mockBlockchainEvent]) } as any);
+    (model.find as jest.Mock).mockReturnValue({ exec: jest.fn().mockResolvedValue([mockBlockchainEvent]) });
     const result = await repository.findByUserId('user123');
     expect(result).toEqual([mockBlockchainEvent]);
   });
 
   it('should find events by blockNumber', async () => {
-    jest.spyOn(model, 'find').mockReturnValue({ exec: jest.fn().mockResolvedValue([mockBlockchainEvent]) } as any);
+    (model.find as jest.Mock).mockReturnValue({ exec: jest.fn().mockResolvedValue([mockBlockchainEvent]) });
     const result = await repository.findByBlockNumber(123);
     expect(result).toEqual([mockBlockchainEvent]);
   });
 
   it('should find the latest block number', async () => {
-    jest.spyOn(model, 'findOne').mockReturnValue({ sort: jest.fn().mockReturnThis(), exec: jest.fn().mockResolvedValue(mockBlockchainEvent) } as any);
+    (model.findOne as jest.Mock).mockReturnValue({ sort: jest.fn().mockReturnThis(), exec: jest.fn().mockResolvedValue(mockBlockchainEvent) });
     const result = await repository.findLatestBlockNumber();
     expect(result).toEqual(123);
   });
 
   it('should return null if no latest block number', async () => {
-    jest.spyOn(model, 'findOne').mockReturnValue({ sort: jest.fn().mockReturnThis(), exec: jest.fn().mockResolvedValue(null) } as any);
+    (model.findOne as jest.Mock).mockReturnValue({ sort: jest.fn().mockReturnThis(), exec: jest.fn().mockResolvedValue(null) });
     const result = await repository.findLatestBlockNumber();
     expect(result).toBeNull();
   });

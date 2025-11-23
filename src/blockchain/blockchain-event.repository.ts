@@ -15,8 +15,8 @@ export class BlockchainEventRepository {
     return createdEvent.save();
   }
 
-  async findByTxHash(txHash: string): Promise<BlockchainEventDocument | null> {
-    return this.blockchainEventModel.findOne({ txHash }).exec();
+  async findByTxHash(txHash: string): Promise<BlockchainEventDocument[]> {
+    return this.blockchainEventModel.find({ txHash }).exec();
   }
 
   async findByUserId(userId: string): Promise<BlockchainEventDocument[]> {
