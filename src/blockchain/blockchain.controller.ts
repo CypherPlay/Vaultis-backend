@@ -4,6 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import { BlockchainEventService } from './blockchain-event.service';
 import { BlockchainWebhookDto } from './dto/blockchain-webhook.dto';
 import { PayloadSanitizer } from '../utils/payload-sanitizer';
+import { Throttle } from '@nestjs/throttler';
+import { BLOCKCHAIN_WEBHOOK_RATE_LIMIT_CONFIG } from '../middleware/rate-limit.config';
 
 @Controller('blockchain')
 export class BlockchainController {
@@ -15,6 +17,7 @@ export class BlockchainController {
   ) {}
 
   @Post('webhook')
+  @Throttle(BLOCKCHAIN_WEBHOOK_RATE_LIMIT_CONFIG.limit, BLOCKCHAIN_WEBHOOK_RATE_LIMIT_CONFIG.windowMs)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async handleWebhook(
     @Req() req: RawBodyRequest<Request>,

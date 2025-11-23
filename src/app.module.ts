@@ -14,10 +14,10 @@ import Keyv from 'keyv';
 import KeyvRedis from '@keyv/redis';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_INTERCEPTOR } from '@nestjs/core';
-import { RateLimitMiddleware } from './middleware/rate-limit.middleware';
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -32,6 +32,14 @@ import { RateLimitMiddleware } from './middleware/rate-limit.middleware';
     BlockchainModule,
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        ttl: config.get<number>('THROTTLE_TTL', 60),
+        limit: config.get<number>('THROTTLE_LIMIT', 10),
+      }),
+    }),
     CacheModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
@@ -58,10 +66,14 @@ import { RateLimitMiddleware } from './middleware/rate-limit.middleware';
       provide: APP_INTERCEPTOR,
       useClass: CacheInterceptor,
     },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RateLimitMiddleware).forRoutes({ path: '*', method: RequestMethod.ALL });
+    // No middleware to apply here as ThrottlerGuard is used globally
   }
 }
