@@ -37,11 +37,10 @@ export class EventParser {
           return event.args.toObject();
         } catch (error) {
           // Fallback for unnamed parameters
-          const obj = {};
-          event.args.forEach((value, index) => {
+          return event.args.toArray().reduce((obj, value, index) => {
             obj[index] = value;
-          });
-          return obj;
+            return obj;
+          }, {});
         }
       })(),
       topic: event.topic,
