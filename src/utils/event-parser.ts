@@ -52,8 +52,17 @@ export class EventParser {
     eventBlock: number,
     requiredConfirmations: number,
   ): boolean {
-    if (requiredConfirmations < 0) {
-      throw new Error('Required confirmations cannot be negative.');
+    if (!Number.isFinite(currentBlock) || !Number.isInteger(currentBlock) || currentBlock < 0) {
+      throw new Error('Current block must be a non-negative finite integer.');
+    }
+    if (!Number.isFinite(eventBlock) || !Number.isInteger(eventBlock) || eventBlock < 0) {
+      throw new Error('Event block must be a non-negative finite integer.');
+    }
+    if (!Number.isFinite(requiredConfirmations) || !Number.isInteger(requiredConfirmations) || requiredConfirmations < 0) {
+      throw new Error('Required confirmations must be a non-negative finite integer.');
+    }
+    if (eventBlock > currentBlock) {
+      throw new Error('Event block cannot be greater than current block.');
     }
     return currentBlock - eventBlock >= requiredConfirmations;
   }
