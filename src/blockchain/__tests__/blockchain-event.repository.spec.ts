@@ -27,19 +27,14 @@ describe('BlockchainEventRepository', () => {
           })),
         },
       ],
-    }).compile();
-
-    repository = module.get<BlockchainEventRepository>(BlockchainEventRepository);
-    model = module.get<Model<BlockchainEventDocument>>(
-      getModelToken(BlockchainEvent.name),
-    );
-
-    // Attach static methods to the mock model
-    (model as any).findOne = jest.fn();
-    (model as any).find = jest.fn();
-    (model as any).sort = jest.fn().mockReturnThis();
-    (model as any).exec = jest.fn();
-    (model as any).aggregate = jest.fn(); // Added aggregate as it's a common static method
+          useValue: jest.fn().mockImplementation(() => ({
+            save: jest.fn().mockResolvedValue(mockBlockchainEvent),
+            findOne: jest.fn(),
+            find: jest.fn(),
+            sort: jest.fn().mockReturnThis(),
+            exec: jest.fn(),
+            aggregate: jest.fn(), // Added aggregate as it's a common static method
+          })),
         },
       ],
     }).compile();
@@ -48,6 +43,7 @@ describe('BlockchainEventRepository', () => {
     model = module.get<Model<BlockchainEventDocument>>(
       getModelToken(BlockchainEvent.name),
     );
+
   });
 
   it('should be defined', () => {
