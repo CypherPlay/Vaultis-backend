@@ -31,7 +31,19 @@ export class EventParser {
     return {
       name: event.name,
       signature: event.signature,
-      args: event.args ? event.args.toObject() : {}, // Convert args to a plain object
+      args: (() => {
+        if (!event.args) return {};
+        try {
+          return event.args.toObject();
+        } catch (error) {
+          // Fallback for unnamed parameters
+          const obj = {};
+          event.args.forEach((value, index) => {
+            obj[index] = value;
+          });
+          return obj;
+        }
+      })(),
       topic: event.topic,
       address: event.address,
       transactionHash: event.transactionHash,
