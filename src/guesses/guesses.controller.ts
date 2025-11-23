@@ -9,6 +9,8 @@ import {
 import { GuessesService } from './guesses.service';
 import { SubmitGuessDto } from './dto/submit-guess.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Throttle } from '@nestjs/throttler';
+import { GUESS_SUBMIT_RATE_LIMIT_CONFIG } from '../middleware/rate-limit.config';
 
 @Controller('guesses')
 export class GuessesController {
@@ -16,6 +18,7 @@ export class GuessesController {
 
   @UseGuards(JwtAuthGuard)
   @Post('submit')
+  @Throttle({ default: { limit: GUESS_SUBMIT_RATE_LIMIT_CONFIG.limit, ttl: GUESS_SUBMIT_RATE_LIMIT_CONFIG.ttl } })
   async submitGuess(@Request() req, @Body() submitGuessDto: SubmitGuessDto) {
     const userId = req.user?.userId;
 
