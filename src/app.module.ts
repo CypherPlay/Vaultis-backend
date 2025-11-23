@@ -1,5 +1,5 @@
 import { GuessesModule } from './guesses/guesses.module';
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
@@ -17,6 +17,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { RateLimitMiddleware } from './middleware/rate-limit.middleware';
 
 @Module({
   imports: [
@@ -59,4 +60,8 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RateLimitMiddleware).forRoutes('* ');
+  }
+}
