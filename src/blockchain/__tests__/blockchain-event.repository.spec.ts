@@ -22,19 +22,15 @@ describe('BlockchainEventRepository', () => {
         BlockchainEventRepository,
         {
           provide: getModelToken(BlockchainEvent.name),
-          useValue: jest.fn().mockImplementation(() => ({
+          useValue: Object.assign(jest.fn().mockImplementation(() => ({
             save: jest.fn().mockResolvedValue(mockBlockchainEvent),
-          })),
-        },
-      ],
-          useValue: jest.fn().mockImplementation(() => ({
-            save: jest.fn().mockResolvedValue(mockBlockchainEvent),
+          })), {
             findOne: jest.fn(),
             find: jest.fn(),
             sort: jest.fn().mockReturnThis(),
             exec: jest.fn(),
-            aggregate: jest.fn(), // Added aggregate as it's a common static method
-          })),
+            aggregate: jest.fn(),
+          }),
         },
       ],
     }).compile();
