@@ -17,7 +17,7 @@ export class BlockchainController {
   ) {}
 
   @Post('webhook')
-  @Throttle(BLOCKCHAIN_WEBHOOK_RATE_LIMIT_CONFIG.limit, BLOCKCHAIN_WEBHOOK_RATE_LIMIT_CONFIG.windowMs)
+  @Throttle({ default: { limit: BLOCKCHAIN_WEBHOOK_RATE_LIMIT_CONFIG.limit, ttl: BLOCKCHAIN_WEBHOOK_RATE_LIMIT_CONFIG.ttl } })
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async handleWebhook(
     @Req() req: RawBodyRequest<Request>,

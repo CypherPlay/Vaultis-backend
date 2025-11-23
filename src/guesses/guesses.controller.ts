@@ -18,7 +18,7 @@ export class GuessesController {
 
   @UseGuards(JwtAuthGuard)
   @Post('submit')
-  @Throttle(GUESS_SUBMIT_RATE_LIMIT_CONFIG.limit, GUESS_SUBMIT_RATE_LIMIT_CONFIG.ttl)
+  @Throttle({ default: { limit: GUESS_SUBMIT_RATE_LIMIT_CONFIG.limit, ttl: GUESS_SUBMIT_RATE_LIMIT_CONFIG.ttl } })
   async submitGuess(@Request() req, @Body() submitGuessDto: SubmitGuessDto) {
     const userId = req.user?.userId;
 
