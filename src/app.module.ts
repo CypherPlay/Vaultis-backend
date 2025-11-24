@@ -16,6 +16,7 @@ import { BlockchainModule } from './blockchain/blockchain.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { LoggerModule } from './logger/logger.module';
+import { RequestLoggerMiddleware } from './middleware/request-logger.middleware';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
@@ -75,6 +76,6 @@ import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // No middleware to apply here as ThrottlerGuard is used globally
+    consumer.apply(RequestLoggerMiddleware).forRoutes({ path: '*', method: RequestMethod.ALL });
   }
 }
