@@ -4,8 +4,10 @@ import * as path from 'path';
 
 const { combine, timestamp, printf, colorize, align } = format;
 
-const logFormat = printf(({ level, message, timestamp, stack }) => {
-  return `[${timestamp}] ${level}: ${stack || message}`;
+const logFormat = printf((info) => {
+  const { level, message, timestamp, stack, context, trace, ...metadata } = info;
+  const metadataString = Object.keys(metadata).length ? JSON.stringify(metadata) : '';
+  return `[${timestamp}] ${level}: ${stack || message} ${context ? `[${context}]` : ''} ${trace ? `[${trace}]` : ''} ${metadataString}`;
 });
 
 const dailyRotateFileTransport = new transports.DailyRotateFile({
@@ -36,6 +38,17 @@ const logger = createLogger({
     dailyRotateFileTransport,
   ],
   exceptionHandlers: [
+    dailyRotateFileTransport,
+    new transports.Console({
+      format: combine(
+        colorize(),
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        align(),
+        logFormat
+      ),
+    }),
+  ],
+  rejectionHandlers: [
     dailyRotateFileTransport,
     new transports.Console({
       format: combine(
