@@ -15,6 +15,7 @@ import KeyvRedis from '@keyv/redis';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { LoggerModule } from './logger/logger.module';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
@@ -30,6 +31,7 @@ import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
     WalletModule,
     RetryModule,
     BlockchainModule,
+    LoggerModule,
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRootAsync({
