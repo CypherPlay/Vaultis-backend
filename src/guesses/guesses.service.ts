@@ -1,4 +1,5 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { LoggerService } from '../logger/logger.service';
 import { SubmitGuessDto } from './dto/submit-guess.dto';
 import { WalletService } from '../wallet/wallet.service';
 import { InjectModel } from '@nestjs/mongoose';
@@ -12,8 +13,6 @@ import { GuessesRepository } from './guesses.repository';
 
 @Injectable()
 export class GuessesService {
-  private readonly logger = new Logger(GuessesService.name);
-
   constructor(
     private readonly walletService: WalletService,
     @InjectModel(Riddle.name) private riddleModel: Model<RiddleDocument>,
@@ -21,6 +20,7 @@ export class GuessesService {
     @InjectConnection() private readonly connection: Connection,
     private readonly guessesRepository: GuessesRepository,
     private readonly leaderboardService: LeaderboardService,
+    private readonly logger: LoggerService,
   ) {}
 
   private normalizeString(str: string): string {

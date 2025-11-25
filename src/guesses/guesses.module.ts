@@ -8,6 +8,8 @@ import { User, UserSchema } from '../schemas/user.schema';
 import { Riddle, RiddleSchema } from '../schemas/riddle.schema';
 import { WalletModule } from '../wallet/wallet.module';
 import { GuessesRepository } from './guesses.repository';
+import { LoggerModule } from '../logger/logger.module';
+import { LeaderboardModule } from '../leaderboard/leaderboard.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { GuessesRepository } from './guesses.repository';
       { name: Riddle.name, schema: RiddleSchema },
     ]),
     WalletModule,
+    LoggerModule,
+    LeaderboardModule,
   ],
   controllers: [GuessesController],
   providers: [GuessesService, GuessesRepository],
