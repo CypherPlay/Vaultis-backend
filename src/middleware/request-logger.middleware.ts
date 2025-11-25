@@ -1,12 +1,18 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { LoggerService } from '../logger/logger.service';
+import * as ipaddr from 'ipaddr.js';
 
 @Injectable()
 export class RequestLoggerMiddleware implements NestMiddleware {
   constructor(private readonly logger: LoggerService) {}
 
   use(req: Request, res: Response, next: NextFunction) {
+    if (process.env.DISABLE_IP_LOGGING === 'true') {
+      this.logger.log('[Request] IP logging disabled by configuration.', RequestLoggerMiddleware.name);
+      return next();
+    }
+
     const start = Date.now();
     const { method, originalUrl } = req;
     const clientIp = this.anonymizeIp(this.getClientIp(req));
@@ -26,11 +32,11 @@ export class RequestLoggerMiddleware implements NestMiddleware {
   private getClientIp(req: Request): string {
     const xForwardedFor = req.headers['x-forwarded-for'];
     if (xForwardedFor) {
-      return Array.isArray(xForwardedFor) ? xForwardedFor[0] : xForwardedFor.split(',')[0];
+      return (Array.isArray(xForwardedFor) ? xForwardedFor[0] : xForwardedFor.split(',')[0]).trim();
     }
     const xRealIp = req.headers['x-real-ip'];
     if (xRealIp) {
-      return Array.isArray(xRealIp) ? xRealIp[0] : xRealIp.split(',')[0];
+      return (Array.isArray(xRealIp) ? xRealIp[0] : xRealIp.split(',')[0]).trim();
     }
     if (req.ip) {
       return req.ip;
@@ -55,11 +61,19 @@ export class RequestLoggerMiddleware implements NestMiddleware {
     }
     // IPv6: Mask the last 80 bits (last 5 hextets)
     if (ip.includes(':')) {
-      const parts = ip.split(':');
-      // A full IPv6 address has 8 parts. We want to mask the last 5.
-      // This means keeping the first 3 parts.
-      if (parts.length > 3) {
-        return parts.slice(0, 3).join(':') + ':xxxx:xxxx:xxxx:xxxx:xxxx';
+      try {
+        const addr = ipaddr.parse(ip);
+        if (addr.kind() === 'ipv6') {
+          // Mask the last 5 hextets (80 bits)
+          for (let i = 3; i <= 7; i++) {
+            addr.parts[i] = 0;
+          }
+          return addr.toString();
+        }
+      } catch (error) {
+        // If parsing fails, treat as unknown or return original IP
+        this.logger.warn(`Failed to parse IPv6 address ${ip}: ${error.message}`, RequestLoggerMiddleware.name);
+        return ip;
       }
     }
     return ip;
