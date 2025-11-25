@@ -34,6 +34,12 @@ This project uses Redis for managing nonces to prevent replay attacks. Ensure yo
 - `REDIS_URL`: The connection string for your Redis instance (e.g., `redis://localhost:6379`).
 - `JWT_SECRET`: Secret key for JWT signing.
 
+### Logging and Privacy
+
+To enhance user privacy, client IP addresses are anonymized before being logged. For IPv4, the last octet is masked (e.g., `192.168.1.xxx`), and for IPv6, the last 80 bits are masked (e.g., `parts.slice(0, 3).join(':') + ':xxxx:xxxx:xxxx:xxxx:xxxx'`).
+
+- `DISABLE_IP_LOGGING`: Set to `true` to completely disable IP address logging. By default, IP addresses are anonymized and logged.
+
 ```bash
 $ npm install
 ```
