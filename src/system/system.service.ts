@@ -43,8 +43,13 @@ export class SystemService {
   }
 
   private checkBlockchainListenerHealth() {
-    const isRunning = this.blockchainPollerService.isPolling();
-    return { status: isRunning ? 'up' : 'down', message: isRunning ? 'Blockchain listener is active' : 'Blockchain listener is inactive' };
+    const maxStaleMs = 30000; // 30 seconds
+    const isHealthy = this.blockchainPollerService.isHealthy(maxStaleMs);
+    const lastPoll = this.blockchainPollerService.getLastPollAt();
+    const message = isHealthy
+      ? `Blockchain listener is active. Last polled at ${lastPoll?.toISOString() || 'never'}.`
+      : `Blockchain listener is inactive or stale. Last polled at ${lastPoll?.toISOString() || 'never'}.`;
+    return { status: isHealthy ? 'up' : 'down', message };
   }
 
   private async checkRedisHealth() {

@@ -7,7 +7,8 @@ import { ConfigService } from '@nestjs/config';
 export class BlockchainPollerService implements OnModuleInit {
   private readonly logger = new Logger(BlockchainPollerService.name);
   private lastProcessedBlock: number = 0;
-  private _isPolling = false;
+  private _isInitialized = false;
+  private lastPollAt: Date | null = null;
 
   constructor(
     private readonly blockchainEventService: BlockchainEventService,
@@ -15,7 +16,7 @@ export class BlockchainPollerService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    this._isPolling = true;
+    this._isInitialized = true;
     // Initialize lastProcessedBlock from config or a persistent store
     // For now, we'll start from the latest block on service init
     try {
@@ -28,12 +29,20 @@ export class BlockchainPollerService implements OnModuleInit {
     }
   }
 
-  public isPolling(): boolean {
-    return this._isPolling;
+  public isHealthy(maxStaleMs: number): boolean {
+    if (!this.lastPollAt) {
+      return false; // Never polled yet
+    }
+    return (new Date().getTime() - this.lastPollAt.getTime()) < maxStaleMs;
+  }
+
+  public getLastPollAt(): Date | null {
+    return this.lastPollAt;
   }
 
   @Cron(CronExpression.EVERY_10_SECONDS) // Poll every 10 seconds
   async handleCron() {
+    this.lastPollAt = new Date();
     this.logger.debug('Polling for blockchain events...');
 
     if (!this.blockchainEventService.isConnected()) {
