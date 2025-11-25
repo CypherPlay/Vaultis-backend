@@ -1,4 +1,5 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { LoggerService } from '../logger/logger.service';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
@@ -7,7 +8,6 @@ import { BlockchainWebhookDto } from './dto/blockchain-webhook.dto';
 
 @Injectable()
 export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(BlockchainEventService.name);
   private provider: ethers.JsonRpcProvider | null = null;
   private contract: ethers.Contract | null = null;
   private boundHandlePurchaseRetryEvent: ((...args: any[]) => void) | null = null;
@@ -25,22 +25,23 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly configService: ConfigService,
     private readonly retryInventoryService: RetryInventoryService,
+    private readonly logger: LoggerService,
   ) {}
 
   onModuleInit() {
-    this.logger.log('Initializing BlockchainEventService...');
+    this.logger.log('Initializing BlockchainEventService...', BlockchainEventService.name);
     this.start();
   }
 
   onModuleDestroy() {
-    this.logger.log('Shutting down BlockchainEventService...');
+    this.logger.log('Shutting down BlockchainEventService...', BlockchainEventService.name);
     this.stop();
   }
 
   public async verifySignature(rawBody: string, signature: string, timestamp: string): Promise<boolean> {
     const secret = this.configService.get<string>('WEBHOOK_SECRET');
     if (!secret) {
-      this.logger.error('WEBHOOK_SECRET is not configured.');
+      this.logger.error('WEBHOOK_SECRET is not configured.', '', BlockchainEventService.name);
       throw new UnauthorizedException('Webhook secret not configured.');
     }
 
@@ -50,7 +51,7 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
     const receivedTimestamp = parseInt(timestamp, 10);
 
     if (isNaN(receivedTimestamp) || Math.abs(now - receivedTimestamp) > toleranceSeconds) {
-      this.logger.warn(`Webhook timestamp out of tolerance. Received: ${receivedTimestamp}, Now: ${now}`);
+      this.logger.warn(`Webhook timestamp out of tolerance. Received: ${receivedTimestamp}, Now: ${now}`, BlockchainEventService.name);
       throw new BadRequestException('Webhook timestamp is too old or invalid.');
     }
 
@@ -71,11 +72,11 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (!isValid) {
-      this.logger.warn('Webhook signature verification failed.');
+      this.logger.warn('Webhook signature verification failed.', BlockchainEventService.name);
       throw new UnauthorizedException('Invalid webhook signature.');
     }
 
-    this.logger.debug('Webhook signature and timestamp verified successfully.');
+    this.logger.debug('Webhook signature and timestamp verified successfully.', BlockchainEventService.name);
     return true;
   }
 
@@ -98,7 +99,7 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
 
   private async connectToBlockchain() {
     if (this._isConnected) {
-      this.logger.log('Already connected to blockchain. Skipping reconnection.');
+      this.logger.log('Already connected to blockchain. Skipping reconnection.', BlockchainEventService.name);
       return;
     }
 
@@ -127,10 +128,10 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
       this._isConnected = true;
       this._isHealthy = true;
       this._reconnectAttempts = 0; // Reset attempts on successful connection
-      this.logger.log('Connected to blockchain and listening for purchaseRetry events.');
+      this.logger.log('Connected to blockchain and listening for purchaseRetry events.', BlockchainEventService.name);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to connect to blockchain:', errorMessage);
+      this.logger.error('Failed to connect to blockchain:', errorMessage, BlockchainEventService.name);
       this._isConnected = false;
       this._isHealthy = false;
       this.scheduleReconnect();
@@ -141,7 +142,7 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
     if (this.contract && this.boundHandlePurchaseRetryEvent) {
       this.contract.off('purchaseRetry', this.boundHandlePurchaseRetryEvent);
       this.boundHandlePurchaseRetryEvent = null;
-      this.logger.log('Disconnected from blockchain events.');
+      this.logger.log('Disconnected from blockchain events.', BlockchainEventService.name);
     }
     if (this.provider) {
       // Remove all listeners to prevent memory leaks and ensure clean shutdown
@@ -154,7 +155,7 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
   }
 
   private handleProviderDisconnect(error: Error) {
-    this.logger.error(`Provider disconnected or encountered an error: ${error.message}. Attempting to reconnect...`);
+    this.logger.error(`Provider disconnected or encountered an error: ${error.message}. Attempting to reconnect...`, '', BlockchainEventService.name);
     this._isHealthy = false;
     this._isConnected = false;
     this.scheduleReconnect();
@@ -170,7 +171,7 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
       this.RECONNECT_MAX_DELAY_MS,
     );
 
-    this.logger.log(`Attempting to reconnect in ${delay / 1000} seconds (attempt ${this._reconnectAttempts + 1})...`);
+    this.logger.log(`Attempting to reconnect in ${delay / 1000} seconds (attempt ${this._reconnectAttempts + 1})...`, BlockchainEventService.name);
     this._reconnectTimeout = setTimeout(() => {
       this._reconnectAttempts++;
       this.connectToBlockchain();
@@ -179,7 +180,7 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
 
   private async healthCheck() {
     if (!this._isConnected || !this.provider) {
-      this.logger.warn('Health check skipped: Not connected to blockchain.');
+      this.logger.warn('Health check skipped: Not connected to blockchain.', BlockchainEventService.name);
       this._isHealthy = false;
       this.scheduleReconnect();
       return;
@@ -188,12 +189,12 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.provider.getBlockNumber();
       if (!this._isHealthy) {
-        this.logger.log('Blockchain connection restored and healthy.');
+        this.logger.log('Blockchain connection restored and healthy.', BlockchainEventService.name);
         this._isHealthy = true;
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Health check failed: ${errorMessage}. Marking connection unhealthy.`);
+      this.logger.error(`Health check failed: ${errorMessage}. Marking connection unhealthy.`, '', BlockchainEventService.name);
       this._isHealthy = false;
       this.scheduleReconnect();
     }
@@ -218,34 +219,34 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
   }
 
   public async handlePurchaseRetryEvent(userAddress: string, quantity: bigint, event: ethers.Log) {
-    this.logger.log(`Received purchaseRetry event: userAddress=${userAddress}, quantity=${quantity.toString()}, transactionHash=${event.transactionHash}`);
+    this.logger.log(`Received purchaseRetry event: userAddress=${userAddress}, quantity=${quantity.toString()}, transactionHash=${event.transactionHash}`, BlockchainEventService.name);
     if (!ethers.isAddress(userAddress)) {
-      this.logger.error(`Invalid userAddress received: ${userAddress}`);
+      this.logger.error(`Invalid userAddress received: ${userAddress}`, '', BlockchainEventService.name);
       return;
     }
 
     if (quantity > BigInt(Number.MAX_SAFE_INTEGER) || quantity < BigInt(Number.MIN_SAFE_INTEGER)) {
-      this.logger.error(`Quantity ${quantity.toString()} is out of safe integer range for user ${userAddress}.`);
+      this.logger.error(`Quantity ${quantity.toString()} is out of safe integer range for user ${userAddress}.`, '', BlockchainEventService.name);
       return;
     }
 
     try {
       await this.retryInventoryService.addRetries(userAddress, Number(quantity), event.transactionHash);
-      this.logger.log(`Successfully added ${quantity.toString()} retries for user ${userAddress} with transaction ${event.transactionHash}`);
+      this.logger.log(`Successfully added ${quantity.toString()} retries for user ${userAddress} with transaction ${event.transactionHash}`, BlockchainEventService.name);
     } catch (error) {
-      this.logger.error(`Failed to process purchaseRetry event for user ${userAddress} (transaction ${event.transactionHash}): ${error.message}`);
+      this.logger.error(`Failed to process purchaseRetry event for user ${userAddress} (transaction ${event.transactionHash}): ${error.message}`, error.stack, BlockchainEventService.name);
     }
   }
 
   public async processWebhookEvent(payload: BlockchainWebhookDto): Promise<void> {
-    this.logger.log(`Processing webhook event of type: ${payload.eventType}`);
+    this.logger.log(`Processing webhook event of type: ${payload.eventType}`, BlockchainEventService.name);
 
     switch (payload.eventType) {
       case 'purchaseRetry':
         await this.handleWebhookPurchaseRetryEvent(payload.payload);
         break;
       default:
-        this.logger.warn(`Unhandled webhook event type: ${payload.eventType}`);
+        this.logger.warn(`Unhandled webhook event type: ${payload.eventType}`, BlockchainEventService.name);
         break;
     }
   }
@@ -254,21 +255,21 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
     const { userAddress, quantity, transactionHash } = data;
 
     if (!userAddress) {
-      this.logger.error('Missing userAddress for purchaseRetry webhook event.');
+      this.logger.error('Missing userAddress for purchaseRetry webhook event.', '', BlockchainEventService.name);
       throw new BadRequestException('Missing userAddress for purchaseRetry webhook event.');
     }
     if (!quantity) {
-      this.logger.error('Missing quantity for purchaseRetry webhook event.');
+      this.logger.error('Missing quantity for purchaseRetry webhook event.', '', BlockchainEventService.name);
       throw new BadRequestException('Missing quantity for purchaseRetry webhook event.');
     }
     if (!transactionHash) {
-      this.logger.error('Missing transactionHash for purchaseRetry webhook event.');
+      this.logger.error('Missing transactionHash for purchaseRetry webhook event.', '', BlockchainEventService.name);
       throw new BadRequestException('Missing transactionHash for purchaseRetry webhook event.');
     }
 
     // 1. Validate userAddress
     if (!ethers.isAddress(userAddress)) {
-      this.logger.error(`Invalid userAddress format for purchaseRetry webhook event: ${userAddress}`);
+      this.logger.error(`Invalid userAddress format for purchaseRetry webhook event: ${userAddress}`, '', BlockchainEventService.name);
       throw new BadRequestException('Invalid userAddress format.');
     }
 
@@ -278,17 +279,17 @@ export class BlockchainEventService implements OnModuleInit, OnModuleDestroy {
       try {
         quantityBigInt = BigInt(quantity);
       } catch (error) {
-        this.logger.error(`Invalid quantity format for purchaseRetry webhook event: ${quantity}. Error: ${error.message}`);
+        this.logger.error(`Invalid quantity format for purchaseRetry webhook event: ${quantity}. Error: ${error.message}`, error.stack, BlockchainEventService.name);
         throw new BadRequestException('Invalid quantity format.');
       }
     } else {
-      this.logger.error(`Invalid quantity type or format for purchaseRetry webhook event: ${quantity}`);
+      this.logger.error(`Invalid quantity type or format for purchaseRetry webhook event: ${quantity}`, '', BlockchainEventService.name);
       throw new BadRequestException('Invalid quantity format.');
     }
 
     // 3. Validate transactionHash format (0x-prefixed hex string, 66 chars for 32-byte hash)
     if (!ethers.isHexString(transactionHash, 32)) {
-      this.logger.error(`Invalid transactionHash format for purchaseRetry webhook event: ${transactionHash}`);
+      this.logger.error(`Invalid transactionHash format for purchaseRetry webhook event: ${transactionHash}`, '', BlockchainEventService.name);
       throw new BadRequestException('Invalid transactionHash format.');
     }
 

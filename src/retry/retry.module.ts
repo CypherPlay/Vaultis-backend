@@ -4,6 +4,7 @@ import { RetryInventoryService } from './retry-inventory.service';
 import { User, UserSchema } from '../schemas/user.schema';
 import { RetryInventory, RetryInventorySchema } from '../schemas/retry-inventory.schema';
 import { ProcessedTransaction, ProcessedTransactionSchema } from '../schemas/processed-transaction.schema';
+import { LoggerModule } from '../logger/logger.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { ProcessedTransaction, ProcessedTransactionSchema } from '../schemas/pro
       { name: RetryInventory.name, schema: RetryInventorySchema },
       { name: ProcessedTransaction.name, schema: ProcessedTransactionSchema },
     ]),
+    LoggerModule,
   ],
   providers: [RetryInventoryService],
   exports: [RetryInventoryService],
