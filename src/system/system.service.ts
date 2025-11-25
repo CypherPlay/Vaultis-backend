@@ -63,8 +63,14 @@ export class SystemService {
   }
 
   private checkSchedulerHealth() {
-    const jobs = this.schedulerRegistry.getIntervals();
-    const hasJobs = jobs.length > 0;
-    return { status: hasJobs ? 'up' : 'down', message: hasJobs ? 'Scheduler has active jobs' : 'Scheduler has no active jobs' };
+    const cronJobs = this.schedulerRegistry.getCronJobs();
+    const intervals = this.schedulerRegistry.getIntervals();
+    const hasActiveJobs = cronJobs.size > 0 || intervals.length > 0;
+    return {
+      status: hasActiveJobs ? 'up' : 'down',
+      message: hasActiveJobs
+        ? `Scheduler has active jobs (${cronJobs.size} cron jobs, ${intervals.length} intervals)`
+        : 'Scheduler has no active jobs',
+    };
   }
 }
