@@ -33,6 +33,7 @@ import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
     RetryModule,
     BlockchainModule,
     LoggerModule,
+    SystemModule,
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRootAsync({
