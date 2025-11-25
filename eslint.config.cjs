@@ -1,12 +1,12 @@
-// @ts-check
-import eslint from '@eslint/js';
-import { default as eslintPluginPrettierRecommended } from 'eslint-plugin-prettier/recommended';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
+//@ts-check
+const eslint = require('@eslint/js');
+const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommended');
+const globals = require('globals');
+const tseslint = require('typescript-eslint');
 
-export default tseslint.config(
+module.exports = tseslint.config(
   {
-    ignores: ['eslint.config.mjs'],
+    ignores: ['eslint.config.cjs'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -17,10 +17,10 @@ export default tseslint.config(
         ...globals.node,
         ...globals.jest,
       },
-      sourceType: 'module',
+      sourceType: 'commonjs',
       parserOptions: {
         projectService: true,
-        tsconfigRootDir: import.meta.dirname,
+        tsconfigRootDir: __dirname,
       },
     },
   },
