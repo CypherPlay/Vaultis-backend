@@ -18,6 +18,6 @@ import { LoggerModule } from '../logger/logger.module';
   ],
   controllers: [BlockchainController],
   providers: [BlockchainEventService, BlockchainPollerService, BlockchainEventRepository],
-  exports: [BlockchainEventService, BlockchainEventRepository],
+  exports: [BlockchainEventService, BlockchainEventRepository, BlockchainPollerService],
 })
 export class BlockchainModule {}
