@@ -17,6 +17,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { LoggerModule } from './logger/logger.module';
 import { RequestLoggerMiddleware } from './middleware/request-logger.middleware';
+import { SystemModule } from './system/system.module';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
@@ -33,6 +34,7 @@ import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
     RetryModule,
     BlockchainModule,
     LoggerModule,
+    SystemModule,
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRootAsync({

@@ -64,11 +64,13 @@ export class RequestLoggerMiddleware implements NestMiddleware {
       try {
         const addr = ipaddr.parse(ip);
         if (addr.kind() === 'ipv6') {
-          // Mask the last 5 hextets (80 bits)
-          for (let i = 3; i <= 7; i++) {
-            addr.parts[i] = 0;
+          // Mask the last 80 bits (last 5 hextets)
+          const byteArray = addr.toByteArray();
+          // Set the last 10 bytes (80 bits) to zero
+          for (let i = 6; i < byteArray.length; i++) {
+            byteArray[i] = 0;
           }
-          return addr.toString();
+          return ipaddr.fromByteArray(byteArray).toString();
         }
       } catch (error) {
         // If parsing fails, treat as unknown or return original IP
