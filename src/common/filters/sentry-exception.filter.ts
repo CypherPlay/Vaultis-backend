@@ -7,7 +7,11 @@ export class SentryExceptionFilter extends BaseExceptionFilter {
   private readonly logger = new Logger(SentryExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost) {
-    this.logger.error('Unhandled exception caught by SentryExceptionFilter', exception);
+    this.logger.error(
+      'Unhandled exception caught by SentryExceptionFilter',
+      exception instanceof Error ? exception.stack : undefined,
+      exception,
+    );
     Sentry.captureException(exception);
     super.catch(exception, host);
   }
