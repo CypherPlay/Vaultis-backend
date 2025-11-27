@@ -155,7 +155,7 @@ describe('RetryInventoryService', () => {
         expectedAmount,
       );
 
-      expect(service.addRetries).toHaveBeenCalledWith(userId, expectedAmount);
+      expect(service.addRetries).toHaveBeenCalledWith(userId, expectedAmount, transactionHash);
       expect(result).toEqual(updatedRetryInventory);
     });
 
