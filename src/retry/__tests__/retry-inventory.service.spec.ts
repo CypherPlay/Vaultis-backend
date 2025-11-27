@@ -6,7 +6,7 @@ import {
   RetryInventory,
   RetryInventoryDocument,
 } from '../../schemas/retry-inventory.schema';
-import { BadRequestException, ConflictException } from ' @nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 
 const mockRetryInventory = (retryCount: number = 0): RetryInventoryDocument =>
   ({
