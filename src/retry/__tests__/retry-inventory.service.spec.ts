@@ -178,5 +178,34 @@ describe('RetryInventoryService', () => {
         service.verifyOnChainPurchase(userId, transactionHash, expectedAmount),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('should handle double crediting by throwing ConflictException if transaction already processed', async () => {
+      const userId = 'testUserId';
+      const transactionHash = '0xalreadyProcessed';
+      const expectedAmount = 5;
+
+      jest.spyOn(service, 'addRetries').mockRejectedValue(
+        new ConflictException(`Transaction ${transactionHash} has already been processed.`),
+      );
+
+      await expect(
+        service.verifyOnChainPurchase(userId, transactionHash, expectedAmount),
+      ).rejects.toThrow(ConflictException);
+      expect(service.addRetries).toHaveBeenCalledWith(userId, expectedAmount, transactionHash);
+    });
+
+    it('should propagate errors from addRetries during on-chain verification', async () => {
+      const userId = 'testUserId';
+      const transactionHash = '0xerrorTransaction';
+      const expectedAmount = 5;
+      const errorMessage = 'Database connection lost';
+
+      jest.spyOn(service, 'addRetries').mockRejectedValue(new Error(errorMessage));
+
+      await expect(
+        service.verifyOnChainPurchase(userId, transactionHash, expectedAmount),
+      ).rejects.toThrow(errorMessage);
+      expect(service.addRetries).toHaveBeenCalledWith(userId, expectedAmount, transactionHash);
+    });
   });
 });
