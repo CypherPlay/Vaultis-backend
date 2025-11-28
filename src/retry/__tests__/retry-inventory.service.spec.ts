@@ -2,15 +2,19 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RetryInventoryService } from '../retry-inventory.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { RetryInventory, RetryInventoryDocument } from '../../schemas/retry-inventory.schema';
-import { BadRequestException } from '@nestjs/common';
+import {
+  RetryInventory,
+  RetryInventoryDocument,
+} from '../../schemas/retry-inventory.schema';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 
-const mockRetryInventory = (retryCount: number = 0): RetryInventoryDocument => ({
-  _id: 'someRetryInventoryId',
-  userId: 'someUserId',
-  retryCount,
-  save: jest.fn().mockResolvedValue(true),
-} as any);
+const mockRetryInventory = (retryCount: number = 0): RetryInventoryDocument =>
+  ({
+    _id: 'someRetryInventoryId',
+    userId: 'someUserId',
+    retryCount,
+    save: jest.fn().mockResolvedValue(true),
+  }) as any;
 
 describe('RetryInventoryService', () => {
   let service: RetryInventoryService;
@@ -31,7 +35,9 @@ describe('RetryInventoryService', () => {
     }).compile();
 
     service = module.get<RetryInventoryService>(RetryInventoryService);
-    retryInventoryModel = module.get<Model<RetryInventoryDocument>>(getModelToken(RetryInventory.name));
+    retryInventoryModel = module.get<Model<RetryInventoryDocument>>(
+      getModelToken(RetryInventory.name),
+    );
   });
 
   it('should be defined', () => {
@@ -50,7 +56,7 @@ describe('RetryInventoryService', () => {
       expect(retryInventoryModel.findOneAndUpdate).toHaveBeenCalledWith(
         { userId: 'someUserId' },
         { $inc: { retryCount: 3 }, updatedAt: expect.any(Date) },
-        { new: true, upsert: true }
+        { new: true, upsert: true },
       );
     });
 
@@ -60,7 +66,7 @@ describe('RetryInventoryService', () => {
       } as any);
 
       await expect(service.addRetries('nonExistentUser', 1)).rejects.toThrow(
-        BadRequestException
+        BadRequestException,
       );
     });
   });
@@ -76,7 +82,7 @@ describe('RetryInventoryService', () => {
       expect(retryInventoryModel.findOneAndUpdate).toHaveBeenCalledWith(
         { userId: 'someUserId', retryCount: { $gte: 3 } },
         { $inc: { retryCount: -3 }, updatedAt: expect.any(Date) },
-        { new: true }
+        { new: true },
       );
       expect(result.retryCount).toBe(2);
     });
@@ -116,7 +122,9 @@ describe('RetryInventoryService', () => {
       } as any);
 
       const result = await service.getRetries('someUserId');
-      expect(retryInventoryModel.findOne).toHaveBeenCalledWith({ userId: 'someUserId' });
+      expect(retryInventoryModel.findOne).toHaveBeenCalledWith({
+        userId: 'someUserId',
+      });
       expect(result).toBe(10);
     });
 
@@ -137,7 +145,9 @@ describe('RetryInventoryService', () => {
       const expectedAmount = 5;
       const updatedRetryInventory = mockRetryInventory(15);
 
-      jest.spyOn(service, 'addRetries').mockResolvedValue(updatedRetryInventory);
+      jest
+        .spyOn(service, 'addRetries')
+        .mockResolvedValue(updatedRetryInventory);
 
       const result = await service.verifyOnChainPurchase(
         userId,
@@ -145,7 +155,7 @@ describe('RetryInventoryService', () => {
         expectedAmount,
       );
 
-      expect(service.addRetries).toHaveBeenCalledWith(userId, expectedAmount);
+      expect(service.addRetries).toHaveBeenCalledWith(userId, expectedAmount, transactionHash);
       expect(result).toEqual(updatedRetryInventory);
     });
 
@@ -177,6 +187,49 @@ describe('RetryInventoryService', () => {
       await expect(
         service.verifyOnChainPurchase(userId, transactionHash, expectedAmount),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should handle double crediting by throwing ConflictException if transaction already processed', async () => {
+      const userId = 'testUserId';
+      const transactionHash = '0xalreadyProcessed';
+      const expectedAmount = 5;
+
+      jest
+        .spyOn(service, 'addRetries')
+        .mockRejectedValue(
+          new ConflictException(
+            `Transaction ${transactionHash} has already been processed.`,
+          ),
+        );
+
+      await expect(
+        service.verifyOnChainPurchase(userId, transactionHash, expectedAmount),
+      ).rejects.toThrow(ConflictException);
+      expect(service.addRetries).toHaveBeenCalledWith(
+        userId,
+        expectedAmount,
+        transactionHash,
+      );
+    });
+
+    it('should propagate errors from addRetries during on-chain verification', async () => {
+      const userId = 'testUserId';
+      const transactionHash = '0xerrorTransaction';
+      const expectedAmount = 5;
+      const errorMessage = 'Database connection lost';
+
+      jest
+        .spyOn(service, 'addRetries')
+        .mockRejectedValue(new Error(errorMessage));
+
+      await expect(
+        service.verifyOnChainPurchase(userId, transactionHash, expectedAmount),
+      ).rejects.toThrow(errorMessage);
+      expect(service.addRetries).toHaveBeenCalledWith(
+        userId,
+        expectedAmount,
+        transactionHash,
+      );
     });
   });
 });
