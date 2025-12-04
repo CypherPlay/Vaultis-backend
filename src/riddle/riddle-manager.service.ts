@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, NotFoundException } from '@nestjs/common';
 import { Cron, SchedulerRegistry } from '@nestjs/schedule';
 import { RiddleService, RiddleMetadataUpdateDto } from './riddle.service';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
@@ -230,6 +230,10 @@ export class RiddleManagerService implements OnModuleInit {
 
   async finalizeRiddlePrize(riddleId: string): Promise<void> {
     this.logger.log(`Finalizing prize for riddle: ${riddleId}`);
+    const riddle = await this.riddleService.getRiddleById(riddleId);
+    if (!riddle) {
+      throw new NotFoundException(`Riddle with ID ${riddleId} not found`);
+    }
     // TODO: Implement prize finalization logic:
     // 1. Fetch the riddle and all correct guesses.
     // 2. Determine winner(s) based on game logic (e.g., earliest correct guess).
