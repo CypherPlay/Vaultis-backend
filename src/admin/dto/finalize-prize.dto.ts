@@ -1,8 +1,7 @@
-import { IsString, IsNotEmpty, IsISO8601 } from 'class-validator';
+import { IsString, IsNotEmpty, IsISO8601, IsMongoId, Matches } from 'class-validator';
 
 export class FinalizePrizeDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsMongoId()
   riddleId: string;
 
   @IsString()
@@ -11,6 +10,7 @@ export class FinalizePrizeDto {
 
   @IsString()
   @IsNotEmpty()
+  @Matches(/^0x[a-fA-F0-9]{64}$/, { message: 'Invalid transaction hash format' })
   transactionHash: string;
 
   @IsISO8601()
