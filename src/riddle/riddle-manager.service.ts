@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, SchedulerRegistry } from '@nestjs/schedule';
-import { RiddleService, UpdateRiddleDto } from './riddle.service';
+import { RiddleService, RiddleMetadataUpdateDto } from './riddle.service';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
 import { Guess, GuessDocument } from '../schemas/guess.schema';
 import { ClientSession, Connection, Model, Types } from 'mongoose';
@@ -51,7 +51,7 @@ export class RiddleManagerService implements OnModuleInit {
       if (this.activeRiddle && isRiddleDocument(this.activeRiddle)) {
         expiredRiddleId = this.activeRiddle._id!.toString();
         this.logger.log(`Expiring previous riddle: ${expiredRiddleId}`);
-        const updateExpiredDto: UpdateRiddleDto = {
+        const updateExpiredDto: RiddleMetadataUpdateDto = {
           expiresAt: now,
           lastUsedAt: now,
         };
@@ -93,7 +93,7 @@ export class RiddleManagerService implements OnModuleInit {
       const expiresAt = new Date();
       expiresAt.setUTCDate(expiresAt.getUTCDate() + 1); // Set expiration for 24 hours from now
 
-      const updateNewDto: UpdateRiddleDto = {
+      const updateNewDto: RiddleMetadataUpdateDto = {
         expiresAt: expiresAt,
         lastUsedAt: now,
       };
@@ -221,10 +221,20 @@ export class RiddleManagerService implements OnModuleInit {
    * Checks if the current active riddle has expired.
    * @returns True if the riddle is expired or not set, false otherwise.
    */
-  isRiddleExpired(): boolean {
+  async isRiddleExpired(): Promise<boolean> {
     if (!this.activeRiddle || !this.activeRiddle.expiresAt) {
       return true; // No active riddle or no expiration date means it's "expired" for new guesses
     }
     return new Date() > this.activeRiddle.expiresAt;
+  }
+
+  async finalizeRiddlePrize(riddleId: string): Promise<void> {
+    this.logger.log(`Finalizing prize for riddle: ${riddleId}`);
+    // TODO: Implement prize finalization logic:
+    // 1. Fetch the riddle and all correct guesses.
+    // 2. Determine winner(s) based on game logic (e.g., earliest correct guess).
+    // 3. Distribute prize from riddle.prizePool to winner(s) via WalletService.
+    // 4. Mark riddle as finalized/closed in the database.
+    this.logger.log(`Prize finalization for riddle ${riddleId} simulation completed. Actual logic to be implemented.`);
   }
 }
