@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, Model, Types } from 'mongoose';
 import { Riddle, RiddleDocument } from '../schemas/riddle.schema';
+import { CreateRiddleDto } from './dto/create-riddle.dto';
+import { UpdateRiddleDto } from './dto/update-riddle.dto';
 
-export class UpdateRiddleDto {
+export class RiddleMetadataUpdateDto {
   expiresAt?: Date;
   lastUsedAt?: Date;
   prizePool?: Types.Decimal128;
@@ -14,6 +16,17 @@ export class RiddleService {
   constructor(
     @InjectModel(Riddle.name) private riddleModel: Model<RiddleDocument>,
   ) {}
+
+  async createRiddle(createRiddleDto: CreateRiddleDto): Promise<RiddleDocument> {
+    const createdRiddle = new this.riddleModel(createRiddleDto);
+    return createdRiddle.save();
+  }
+
+  async updateRiddle(id: string, updateRiddleDto: UpdateRiddleDto): Promise<RiddleDocument | null> {
+    return this.riddleModel
+      .findByIdAndUpdate(id, updateRiddleDto, { new: true })
+      .exec();
+  }
 
   async findCurrentRiddle(): Promise<RiddleDocument | null> {
     // Find the most recent riddle that has not expired yet
@@ -78,7 +91,7 @@ export class RiddleService {
 
   async updateRiddleMetadata(
     id: string,
-    update: UpdateRiddleDto,
+    update: RiddleMetadataUpdateDto,
     session: any = null,
   ): Promise<RiddleDocument | null> {
     return this.riddleModel
