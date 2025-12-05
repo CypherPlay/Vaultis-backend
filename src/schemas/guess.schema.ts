@@ -5,9 +5,9 @@ import { Riddle } from './riddle.schema';
 
 export type GuessDocument = Guess & Document;
 
-@Schema()
+@Schema({ timestamps: true })
 export class Guess {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   userId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Riddle', required: true, index: true })
@@ -18,9 +18,8 @@ export class Guess {
 
   @Prop({ default: false })
   isCorrect: boolean;
-
-  @Prop({ default: Date.now })
-  createdAt: Date;
 }
+
+GuessSchema.index({ userId: 1, createdAt: -1 });
 
 export const GuessSchema = SchemaFactory.createForClass(Guess);
