@@ -19,6 +19,7 @@ import { LoggerModule } from './logger/logger.module';
 import { RequestLoggerMiddleware } from './middleware/request-logger.middleware';
 import { SystemModule } from './system/system.module';
 import { AdminModule } from './admin/admin.module';
+import { UserModule } from './user/user.module';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
@@ -31,12 +32,13 @@ import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
     GuessesModule,
     LeaderboardModule,
     RiddleModule,
-    WalletModule,
+    ,WalletModule,
     RetryModule,
     BlockchainModule,
     LoggerModule,
     SystemModule,
     AdminModule,
+    UserModule,
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRootAsync({
