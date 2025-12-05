@@ -41,10 +41,15 @@ export class Riddle {
 
   @Prop({
     type: String,
-    enum: ['active', 'solved', 'expired'],
+    enum: ['active', 'solved', 'expired', 'completed'],
     default: 'active',
   })
   status: string;
-}
 
+  @Prop({ default: null })
+  winnerAddress: string;
+
+  @Prop({ default: null })
+  completedAt: Date;
+}
 export const RiddleSchema = SchemaFactory.createForClass(Riddle);

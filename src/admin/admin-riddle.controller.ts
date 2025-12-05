@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Put, UseGuards, Param, NotFoundException } from '@nestjs/common';
+import { Body, Controller, Post, Put, UseGuards, Param } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
 import { AdminCreateRiddleDto } from './dto/admin-create-riddle.dto';
 import { AdminUpdateRiddleDto } from './dto/admin-update-riddle.dto';
@@ -22,11 +22,7 @@ export class AdminRiddleController {
     @Param('id') id: string,
     @Body() updateRiddleDto: AdminUpdateRiddleDto,
   ) {
-    const updatedRiddle = await this.adminRiddleService.updateRiddle(id, updateRiddleDto);
-    if (!updatedRiddle) {
-      throw new NotFoundException(`Riddle with ID ${id} not found`);
-    }
-    return updatedRiddle;
+    return this.adminRiddleService.updateRiddle(id, updateRiddleDto);
   }
 
   @Post(':id/finalize-prize')

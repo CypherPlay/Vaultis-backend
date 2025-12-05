@@ -36,7 +36,10 @@ export class AdminRiddleService {
     // the riddle's status and record the payout details.
     existingRiddle.prizePayoutHash = finalizePrizeDto.transactionHash;
     existingRiddle.status = 'completed'; // Or a new status like 'prize_finalized'
-    existingRiddle.completedAt = new Date();
+    // The riddleId in finalizePrizeDto is redundant as the id from the path is authoritative.
+    // We will ignore finalizePrizeDto.riddleId and rely on the @Param('id') value.
+    existingRiddle.winnerAddress = finalizePrizeDto.winnerAddress;
+    existingRiddle.completedAt = new Date(finalizePrizeDto.date);
 
     return existingRiddle.save();
   }
