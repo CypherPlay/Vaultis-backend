@@ -19,9 +19,9 @@ export class AdminRiddleService {
     const answerHash = crypto.createHash('sha256').update(adminCreateRiddleDto.answer).digest('hex');
     const newRiddle = new this.riddleModel({
       ...adminCreateRiddleDto,
-      answer: undefined, // Remove plain answer
+
       answerHash,
-      entryFee: Types.Decimal128.fromString(adminCreateRiddleDto.value),
+      entryFee: Types.Decimal128.fromString(adminCreateRiddleDto.value.toString()),
       prizePool: Types.Decimal128.fromString('0'), // Initial prize pool is 0
       expiresAt: new Date(adminCreateRiddleDto.expiresAt),
       status: 'active',
@@ -44,12 +44,12 @@ export class AdminRiddleService {
 
     if (adminUpdateRiddleDto.answer) {
       existingRiddle.answerHash = crypto.createHash('sha256').update(adminUpdateRiddleDto.answer).digest('hex');
-      existingRiddle.answer = undefined; // Ensure plain answer is not stored
+
     }
 
     if (adminUpdateRiddleDto.value) {
-      existingRiddle.entryFee = Types.Decimal128.fromString(adminUpdateRiddleDto.value);
-      adminUpdateRiddleDto.value = undefined; // Ensure value is not directly updated from DTO
+      existingRiddle.entryFee = Types.Decimal128.fromString(adminUpdateRiddleDto.value.toString());
+
     }
 
     Object.assign(existingRiddle, adminUpdateRiddleDto);

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsPositive } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsPositive, IsISO8601 } from 'class-validator';
 
 export class AdminUpdateRiddleDto {
   @IsOptional()
@@ -13,4 +13,8 @@ export class AdminUpdateRiddleDto {
   @IsNumber()
   @IsPositive()
   value?: number;
+
+  @IsOptional()
+  @IsISO8601()
+  expiresAt?: string;
 }
