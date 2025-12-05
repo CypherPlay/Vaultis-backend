@@ -1,30 +1,24 @@
-import { Controller, Get, Req, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiResponse, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UserHistoryService } from './user-history.service';
+import { UserGuessHistoryDto } from './dto/user-history.dto';
 import { Request } from 'express';
-import { PaginationDto } from '../dto/pagination.dto';
-import { UserHistoryDto } from './dto/user-history.dto';
-import { ApiBearerAuth, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { LoggerService } from '../logger/logger.service';
 
-@ApiTags('User')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
-@Controller('/api/user/history')
+@ApiTags('User History')
+@Controller('user/history')
 export class UserHistoryController {
-  constructor(private readonly logger: LoggerService) {}
+  constructor(private readonly userHistoryService: UserHistoryService) {}
 
-  @Get()
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Limit the number of results' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number for the results' })
-  @ApiResponse({ status: 200, description: 'User history retrieved successfully', type: [UserHistoryDto] })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get('guesses')
+  @ApiOperation({ summary: 'Get user\'s guess history' })
+  @ApiResponse({ status: 200, description: 'User guess history retrieved successfully', type: [UserGuessHistoryDto] })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getUserHistory(
-    @Req() req: Request,
-    @Query() paginationDto: PaginationDto,
-  ): Promise<UserHistoryDto[]> {
-    // In a real application, you would fetch the user's history from a service
-    // using req.user.id and paginationDto.limit, paginationDto.offset
-    this.logger.log(`User ${req.user['userId']} requested history with limit ${paginationDto.limit} and page ${paginationDto.page}`);
-    return [];
+  async getUserGuessHistory(@Req() req: Request): Promise<UserGuessHistoryDto[]> {
+    const userId = req.user['userId'];
+    return this.userHistoryService.getUserGuessHistory(userId);
   }
 }
+
