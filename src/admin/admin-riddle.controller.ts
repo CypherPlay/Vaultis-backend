@@ -2,20 +2,19 @@ import { Body, Controller, Post, Put, UseGuards, Param, NotFoundException } from
 import { AdminGuard } from '../auth/admin.guard';
 import { AdminCreateRiddleDto } from './dto/admin-create-riddle.dto';
 import { AdminUpdateRiddleDto } from './dto/admin-update-riddle.dto';
-import { RiddleService } from '../riddle/riddle.service';
-import { RiddleManagerService } from '../riddle/riddle-manager.service';
+import { FinalizePrizeDto } from './dto/finalize-prize.dto';
+import { AdminRiddleService } from './admin-riddle.service';
 
 @UseGuards(AdminGuard)
 @Controller('api/admin/riddle')
 export class AdminRiddleController {
   constructor(
-    private readonly riddleService: RiddleService,
-    private readonly riddleManagerService: RiddleManagerService,
+    private readonly adminRiddleService: AdminRiddleService,
   ) {}
 
   @Post()
   async createRiddle(@Body() createRiddleDto: AdminCreateRiddleDto) {
-    return this.riddleService.createRiddle(createRiddleDto);
+    return this.adminRiddleService.createRiddle(createRiddleDto);
   }
 
   @Put(':id')
@@ -23,7 +22,7 @@ export class AdminRiddleController {
     @Param('id') id: string,
     @Body() updateRiddleDto: AdminUpdateRiddleDto,
   ) {
-    const updatedRiddle = await this.riddleService.updateRiddle(id, updateRiddleDto);
+    const updatedRiddle = await this.adminRiddleService.updateRiddle(id, updateRiddleDto);
     if (!updatedRiddle) {
       throw new NotFoundException(`Riddle with ID ${id} not found`);
     }
@@ -31,8 +30,11 @@ export class AdminRiddleController {
   }
 
   @Post(':id/finalize-prize')
-  async finalizePrize(@Param('id') id: string) {
-    await this.riddleManagerService.finalizeRiddlePrize(id);
+  async finalizePrize(
+    @Param('id') id: string,
+    @Body() finalizePrizeDto: FinalizePrizeDto,
+  ) {
+    await this.adminRiddleService.finalizePrize(id, finalizePrizeDto);
     return { message: 'Riddle prize finalized successfully' };
   }
 }
