@@ -32,11 +32,14 @@ export class UserHistoryRepository {
     // For 'afterDate' functionality, a separate DTO or parameter would be needed.
     // Here, we use a simple skip/limit with createdAt sorting.
 
+    const limit = pagination.limit ?? 10;
+    const page = pagination.page ?? 1;
+
     return this.guessModel
       .find(query)
       .sort({ createdAt: -1 })
-      .limit(pagination.limit || 10) 
-      .skip((pagination.page - 1) * pagination.limit) // Implement skip for pagination
+      .limit(limit) 
+      .skip((page - 1) * limit) // Implement skip for pagination
       .exec();
   }
 

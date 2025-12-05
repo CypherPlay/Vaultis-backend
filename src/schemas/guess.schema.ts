@@ -20,6 +20,6 @@ export class Guess {
   isCorrect: boolean;
 }
 
-GuessSchema.index({ userId: 1, createdAt: -1 });
-
 export const GuessSchema = SchemaFactory.createForClass(Guess);
+
+GuessSchema.index({ userId: 1, createdAt: -1 });
