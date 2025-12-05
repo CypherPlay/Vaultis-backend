@@ -51,5 +51,8 @@ export class Riddle {
 
   @Prop({ default: null })
   completedAt: Date;
+
+  @Prop({ default: null })
+  prizePayoutHash: string;
 }
 export const RiddleSchema = SchemaFactory.createForClass(Riddle);
