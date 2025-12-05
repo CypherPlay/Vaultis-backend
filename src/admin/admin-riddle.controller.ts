@@ -1,11 +1,12 @@
 import { Body, Controller, Post, Put, UseGuards, Param } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminCreateRiddleDto } from './dto/admin-create-riddle.dto';
 import { AdminUpdateRiddleDto } from './dto/admin-update-riddle.dto';
 import { FinalizePrizeDto } from './dto/finalize-prize.dto';
 import { AdminRiddleService } from './admin-riddle.service';
 
-@UseGuards(AdminGuard)
+@UseGuards(JwtAuthGuard, AdminGuard)
 @Controller('api/admin/riddle')
 export class AdminRiddleController {
   constructor(
