@@ -16,6 +16,6 @@ export class UserGuessHistoryDto {
   @ApiProperty({ description: 'The time the guess was attempted' })
   attemptTime: Date;
 
-  @ApiProperty({ description: 'The user's guess' })
+  @ApiProperty({ description: "The user's guess" })
   userGuess: string;
 }
