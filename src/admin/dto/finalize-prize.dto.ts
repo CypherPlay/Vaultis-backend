@@ -1,8 +1,6 @@
 import { IsString, IsNotEmpty, IsISO8601, IsMongoId, Matches } from 'class-validator';
 
 export class FinalizePrizeDto {
-  @IsMongoId()
-  riddleId: string;
 
   @IsString()
   @IsNotEmpty()
