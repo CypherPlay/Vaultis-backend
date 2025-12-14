@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { LoggerService } from './logger/logger.service';
 import { initializeSentry } from './logger/sentry.config';
 import { SentryExceptionFilter } from './common/filters/sentry-exception.filter';
+import { SanitizeInputInterceptor } from './interceptors/sanitize.interceptor';
 
 async function bootstrap() {
   initializeSentry();
@@ -11,6 +12,7 @@ async function bootstrap() {
 
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(new SentryExceptionFilter(httpAdapter));
+  app.useGlobalInterceptors(new SanitizeInputInterceptor());
 
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', true);
