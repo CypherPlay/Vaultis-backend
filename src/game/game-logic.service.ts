@@ -3,6 +3,10 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class GameLogicService {
+  private normalizeGuess(guess: string): string {
+    return guess.trim().toLowerCase();
+  }
+
   async checkGuess(userGuess: string, correctAnswer: string): Promise<boolean> {
     if (
       userGuess === null ||
@@ -12,8 +16,8 @@ export class GameLogicService {
     ) {
       return false;
     }
-    const normalizedUserGuess = userGuess.trim().toLowerCase();
-    const normalizedCorrectAnswer = correctAnswer.trim().toLowerCase();
+    const normalizedUserGuess = this.normalizeGuess(userGuess);
+    const normalizedCorrectAnswer = this.normalizeGuess(correctAnswer);
 
     if (normalizedUserGuess === '' || normalizedCorrectAnswer === '') {
       return false;
