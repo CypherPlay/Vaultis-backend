@@ -16,6 +16,38 @@ describe('GameLogicService', () => {
     expect(service).toBeDefined();
   });
 
+  describe('normalizeGuess (private method)', () => {
+    // Accessing private method for testing purposes
+    const normalizeGuess = (guess: string) => (service as any).normalizeGuess(guess);
+
+    it('should convert to lowercase', () => {
+      expect(normalizeGuess('ANSWER')).toBe('answer');
+      expect(normalizeGuess('AnSwEr')).toBe('answer');
+    });
+
+    it('should trim leading and trailing whitespace', () => {
+      expect(normalizeGuess('  answer  ')).toBe('answer');
+      expect(normalizeGuess('\tanswer\n')).toBe('answer');
+    });
+
+    it('should handle multi-word inputs', () => {
+      expect(normalizeGuess('  Multi Word Answer  ')).toBe('multi word answer');
+    });
+
+    it('should return empty string for only whitespace', () => {
+      expect(normalizeGuess('   ')).toBe('');
+      expect(normalizeGuess('\t\n')).toBe('');
+    });
+
+    it('should handle special characters', () => {
+      expect(normalizeGuess('ans-wer!')).toBe('ans-wer!');
+    });
+
+    it('should return empty string for an empty string', () => {
+      expect(normalizeGuess('')).toBe('');
+    });
+  });
+
   describe('checkGuess', () => {
     it('should return true for exact matches', async () => {
       expect(await service.checkGuess('answer', 'answer')).toBe(true);
@@ -54,6 +86,17 @@ describe('GameLogicService', () => {
       expect(await service.checkGuess('ans-wer', 'ans-wer')).toBe(true);
       expect(await service.checkGuess('ans wer', 'ans wer')).toBe(true);
       expect(await service.checkGuess('ans.wer', 'ans.wer')).toBe(true);
+    });
+
+    it('should return true for multi-word matches with various casing and spacing', async () => {
+      expect(await service.checkGuess('  Multi Word Answer  ', 'multi word answer')).toBe(true);
+      expect(await service.checkGuess('multi word answer', '  MULTI WORD ANSWER  ')).toBe(true);
+      expect(await service.checkGuess('MULTI wOrD AnSwEr', 'multi WoRd aNsWeR')).toBe(true);
+    });
+
+    it('should return false for multi-word non-matches', async () => {
+      expect(await service.checkGuess('multi word wrong', 'multi word answer')).toBe(false);
+      expect(await service.checkGuess('multi answer', 'multi word answer')).toBe(false);
     });
   });
 });
