@@ -32,7 +32,7 @@ import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
     GuessesModule,
     LeaderboardModule,
     RiddleModule,
-    ,WalletModule,
+    WalletModule,
     RetryModule,
     BlockchainModule,
     LoggerModule,

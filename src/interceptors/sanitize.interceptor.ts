@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import * as xss from 'xss';
+import xss from 'xss';
 
 @Injectable()
 export class SanitizeInputInterceptor implements NestInterceptor {
