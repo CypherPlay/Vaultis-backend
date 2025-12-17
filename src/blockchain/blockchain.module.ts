@@ -8,6 +8,7 @@ import { BlockchainPollerService } from './blockchain-poller.service';
 import { BlockchainEvent, BlockchainEventSchema } from '../schemas/blockchain-event.schema';
 import { BlockchainEventRepository } from './blockchain-event.repository';
 import { LoggerModule } from '../logger/logger.module';
+import { BlockchainRPCService } from './blockchain-rpc.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { LoggerModule } from '../logger/logger.module';
     LoggerModule,
   ],
   controllers: [BlockchainController],
-  providers: [BlockchainEventService, BlockchainPollerService, BlockchainEventRepository],
-  exports: [BlockchainEventService, BlockchainEventRepository, BlockchainPollerService],
+  providers: [BlockchainEventService, BlockchainPollerService, BlockchainEventRepository, BlockchainRPCService],
+  exports: [BlockchainEventService, BlockchainEventRepository, BlockchainPollerService, BlockchainRPCService],
 })
 export class BlockchainModule {}
