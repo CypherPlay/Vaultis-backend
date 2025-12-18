@@ -4,7 +4,7 @@ module.exports = {
     "json",
     "ts"
   ],
-  rootDir: ".",
+  rootDir: "./",
   preset: 'ts-jest',
   testRegex: ".*\.spec\.ts$",
   transform: {
@@ -14,5 +14,6 @@ module.exports = {
     "**/*.(t|j)s"
   ],
   coverageDirectory: "../coverage",
-  testEnvironment: "node"
+  testEnvironment: "node",
+  resolver: 'jest-resolve/build/defaultResolver.js'
 };

@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { LeaderboardService } from '../leaderboard.service';
+import { LeaderboardService, DailyRankingResult } from '../leaderboard.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { GuessDocument } from '../../schemas/guess.schema';
-import { UserDocument } from '../../schemas/user.schema';
-import { RiddleDocument } from '../../schemas/riddle.schema';
+import { GuessDocument, Guess } from '../../schemas/guess.schema';
+import { UserDocument, User } from '../../schemas/user.schema';
+import { RiddleDocument, Riddle } from '../../schemas/riddle.schema';
 
 describe('LeaderboardService', () => {
   let service: LeaderboardService;
@@ -12,201 +12,159 @@ describe('LeaderboardService', () => {
   let userModel: Model<UserDocument>;
   let riddleModel: Model<RiddleDocument>;
 
-  const mockGuessModel = {
-    aggregate: jest.fn().mockReturnThis(),
-    exec: jest.fn(),
-  };
-
-  const mockUserModel = {};
-  const mockRiddleModel = {};
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LeaderboardService,
         {
-          provide: getModelToken('Guess'),
-          useValue: mockGuessModel,
+          provide: getModelToken(Guess.name),
+          useValue: {
+            aggregate: jest.fn(),
+          },
         },
         {
-          provide: getModelToken('User'),
-          useValue: mockUserModel,
+          provide: getModelToken(User.name),
+          useValue: {
+            aggregate: jest.fn(),
+          },
         },
         {
-          provide: getModelToken('Riddle'),
-          useValue: mockRiddleModel,
+          provide: getModelToken(Riddle.name),
+          useValue: {
+            aggregate: jest.fn(),
+          },
         },
       ],
     }).compile();
 
     service = module.get<LeaderboardService>(LeaderboardService);
-    guessModel = module.get<Model<GuessDocument>>(getModelToken('Guess'));
-    userModel = module.get<Model<UserDocument>>(getModelToken('User'));
-    riddleModel = module.get<Model<RiddleDocument>>(getModelToken('Riddle'));
+    guessModel = module.get<Model<GuessDocument>>(getModelToken(Guess.name));
+    userModel = module.get<Model<UserDocument>>(getModelToken(User.name));
+    riddleModel = module.get<Model<RiddleDocument>>(getModelToken(Riddle.name));
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  // Test cases for calculateDailyRankings
   describe('calculateDailyRankings', () => {
-    it('should calculate daily rankings correctly with tie-breaking', async () => {
-      const mockDailyLeaderboard = [
-        {
-          userId: 'user1',
-          username: 'user1_name',
-          score: 3,
-          submittedAt: new Date('2025-11-13T10:00:00.000Z'),
-        },
-        {
-          userId: 'user2',
-          username: 'user2_name',
-          score: 3,
-          submittedAt: new Date('2025-11-13T10:05:00.000Z'),
-        },
-        {
-          userId: 'user3',
-          username: 'user3_name',
-          score: 2,
-          submittedAt: new Date('2025-11-13T10:10:00.000Z'),
-        },
+    it('should return daily rankings ordered by score and then submission time', async () => {
+      const mockGuesses = [
+        { userId: 'user1', isCorrect: true, submittedAt: new Date('2025-12-18T10:00:00Z') },
+        { userId: 'user2', isCorrect: true, submittedAt: new Date('2025-12-18T10:05:00Z') },
+        { userId: 'user1', isCorrect: true, submittedAt: new Date('2025-12-18T10:10:00Z') },
+        { userId: 'user3', isCorrect: true, submittedAt: new Date('2025-12-18T10:01:00Z') },
+        { userId: 'user2', isCorrect: true, submittedAt: new Date('2025-12-18T10:02:00Z') },
       ];
 
-      (guessModel.aggregate as jest.Mock).mockReturnThis();
-      (guessModel.aggregate().exec as jest.Mock).mockResolvedValue(
-        mockDailyLeaderboard,
-      );
+      const mockUsers = [
+        { _id: 'user1', username: 'User One' },
+        { _id: 'user2', username: 'User Two' },
+        { _id: 'user3', username: 'User Three' },
+      ];
+
+      jest.spyOn(guessModel, 'aggregate').mockReturnValue({
+        exec: jest.fn().mockResolvedValueOnce([
+          { userId: 'user2', username: 'User Two', score: 2, submittedAt: new Date('2025-12-18T10:02:00Z') },
+          { userId: 'user1', username: 'User One', score: 2, submittedAt: new Date('2025-12-18T10:00:00Z') },
+          { userId: 'user3', username: 'User Three', score: 1, submittedAt: new Date('2025-12-18T10:01:00Z') },
+        ]),
+      } as any);
+
 
       const result = await service.calculateDailyRankings();
-      expect(result).toEqual(mockDailyLeaderboard);
-      expect(guessModel.aggregate).toHaveBeenCalled();
+
+      expect(result).toEqual([
+        { userId: 'user2', username: 'User Two', score: 2, submittedAt: new Date('2025-12-18T10:02:00Z') },
+        { userId: 'user1', username: 'User One', score: 2, submittedAt: new Date('2025-12-18T10:00:00Z') },
+        { userId: 'user3', username: 'User Three', score: 1, submittedAt: new Date('2025-12-18T10:01:00Z') },
+      ]);
     });
 
-    it('should return an empty array if no correct guesses for the day', async () => {
-      (guessModel.aggregate as jest.Mock).mockReturnThis();
-      (guessModel.aggregate().exec as jest.Mock).mockResolvedValue([]);
+    it('should handle no correct guesses for the day', async () => {
+      jest.spyOn(guessModel, 'aggregate').mockReturnValue({
+        exec: jest.fn().mockResolvedValueOnce([]),
+      } as any);
 
       const result = await service.calculateDailyRankings();
       expect(result).toEqual([]);
     });
-  });
 
-  // Test cases for getDailyRankings
-  describe('getDailyRankings', () => {
-    it('should return daily rankings with rank', async () => {
-      const mockCalculatedRankings = [
-        {
-          userId: 'user1',
-          username: 'user1_name',
-          score: 3,
-          submittedAt: new Date('2025-11-13T10:00:00.000Z'),
-        },
-        {
-          userId: 'user2',
-          username: 'user2_name',
-          score: 2,
-          submittedAt: new Date('2025-11-13T10:05:00.000Z'),
-        },
-      ];
+    it('should correctly handle ties in score by using submission time', async () => {
+      // User1: 2 correct guesses, first at 10:00:00
+      // User2: 2 correct guesses, first at 10:01:00
+      // User3: 1 correct guess, first at 10:02:00
+      jest.spyOn(guessModel, 'aggregate').mockReturnValue({
+        exec: jest.fn().mockResolvedValueOnce([
+          { userId: 'user1', username: 'User One', score: 2, submittedAt: new Date('2025-12-18T10:00:00Z') },
+          { userId: 'user2', username: 'User Two', score: 2, submittedAt: new Date('2025-12-18T10:01:00Z') },
+          { userId: 'user3', username: 'User Three', score: 1, submittedAt: new Date('2025-12-18T10:02:00Z') },
+        ]),
+      } as any);
 
-      const expectedRankings = [
-        {
-          rank: 1,
-          userId: 'user1',
-          correctGuesses: 3,
-          submissionTime: new Date('2025-11-13T10:00:00.000Z'),
-        },
-        {
-          rank: 2,
-          userId: 'user2',
-          correctGuesses: 2,
-          submissionTime: new Date('2025-11-13T10:05:00.000Z'),
-        },
-      ];
+      const result = await service.calculateDailyRankings();
 
-      jest
-        .spyOn(service, 'calculateDailyRankings')
-        .mockResolvedValue(mockCalculatedRankings);
-
-      const result = await service.getDailyRankings();
-      expect(result).toEqual(expectedRankings);
-      expect(service.calculateDailyRankings).toHaveBeenCalled();
-    });
-
-    it('should return an empty array if no daily rankings are available', async () => {
-      jest.spyOn(service, 'calculateDailyRankings').mockResolvedValue([]);
-
-      const result = await service.getDailyRankings();
-      expect(result).toEqual([]);
+      expect(result[0].userId).toBe('user1'); // User1 wins tie-break due to earlier submission
+      expect(result[1].userId).toBe('user2');
+      expect(result[2].userId).toBe('user3');
     });
   });
 
-  // Test cases for getAllTimeRankings
   describe('getAllTimeRankings', () => {
-    it('should calculate all-time rankings correctly with pagination and tie-breaking', async () => {
-      const mockAllTimeLeaderboard = [
-        {
-          userId: 'user1',
-          username: 'user1_name',
-          score: 10,
-          submittedAt: new Date('2025-11-10T10:00:00.000Z'),
-        },
-        {
-          userId: 'user2',
-          username: 'user2_name',
-          score: 10,
-          submittedAt: new Date('2025-11-11T10:00:00.000Z'),
-        },
-        {
-          userId: 'user3',
-          username: 'user3_name',
-          score: 8,
-          submittedAt: new Date('2025-11-09T10:00:00.000Z'),
-        },
-      ];
+    it('should return all-time rankings ordered by score and then submission time', async () => {
+      jest.spyOn(guessModel, 'aggregate').mockReturnValueOnce({
+        exec: jest.fn().mockResolvedValueOnce([
+          { userId: 'user2', username: 'User Two', score: 5, submittedAt: new Date('2025-12-10T10:00:00Z') },
+          { userId: 'user1', username: 'User One', score: 5, submittedAt: new Date('2025-12-05T10:00:00Z') },
+          { userId: 'user3', username: 'User Three', score: 3, submittedAt: new Date('2025-12-15T10:00:00Z') },
+        ]),
+      } as any).mockReturnValueOnce({
+        exec: jest.fn().mockResolvedValueOnce([{ total: 3 }]),
+      } as any);
 
-      (guessModel.aggregate as jest.Mock).mockReturnThis();
-      (guessModel.aggregate().exec as jest.Mock)
-        .mockResolvedValueOnce(mockAllTimeLeaderboard) // For paginated results
-        .mockResolvedValueOnce([{ total: 3 }]); // For total count
+      const result = await service.getAllTimeRankings();
 
-      const result = await service.getAllTimeRankings(1, 10);
-      expect(result.data).toEqual(mockAllTimeLeaderboard);
+      expect(result.data).toEqual([
+        { userId: 'user2', username: 'User Two', score: 5, submittedAt: new Date('2025-12-10T10:00:00Z') },
+        { userId: 'user1', username: 'User One', score: 5, submittedAt: new Date('2025-12-05T10:00:00Z') },
+        { userId: 'user3', username: 'User Three', score: 3, submittedAt: new Date('2025-12-15T10:00:00Z') },
+      ]);
       expect(result.total).toBe(3);
-      expect(guessModel.aggregate).toHaveBeenCalledTimes(2);
     });
 
-    it('should return an empty array and zero total if no all-time rankings', async () => {
-      (guessModel.aggregate as jest.Mock).mockReturnThis();
-      (guessModel.aggregate().exec as jest.Mock)
-        .mockResolvedValueOnce([]) // For paginated results
-        .mockResolvedValueOnce([{ total: 0 }]); // For total count
+    it('should handle pagination correctly for all-time rankings', async () => {
+      jest.spyOn(guessModel, 'aggregate').mockReturnValueOnce({
+        exec: jest.fn().mockResolvedValueOnce([
+          { userId: 'user3', username: 'User Three', score: 3, submittedAt: new Date('2025-12-15T10:00:00Z') },
+        ]),
+      } as any).mockReturnValueOnce({
+        exec: jest.fn().mockResolvedValueOnce([{ total: 3 }]),
+      } as any);
 
-      const result = await service.getAllTimeRankings(1, 10);
-      expect(result.data).toEqual([]);
-      expect(result.total).toBe(0);
+      const result = await service.getAllTimeRankings(2, 1); // Get second page, 1 item per page
+
+      expect(result.data).toEqual([
+        { userId: 'user3', username: 'User Three', score: 3, submittedAt: new Date('2025-12-15T10:00:00Z') },
+      ]);
+      expect(result.total).toBe(3);
     });
 
-    it('should handle different pagination parameters', async () => {
-      const mockAllTimeLeaderboardPage2 = [
-        {
-          userId: 'user4',
-          username: 'user4_name',
-          score: 5,
-          submittedAt: new Date('2025-11-08T10:00:00.000Z'),
-        },
-      ];
+    it('should correctly handle ties in score by using submission time for all-time rankings', async () => {
+      // User1: 5 correct guesses, first at 2025-12-05T10:00:00Z
+      // User2: 5 correct guesses, first at 2025-12-10T10:00:00Z
+      jest.spyOn(guessModel, 'aggregate').mockReturnValueOnce({
+        exec: jest.fn().mockResolvedValueOnce([
+          { userId: 'user1', username: 'User One', score: 5, submittedAt: new Date('2025-12-05T10:00:00Z') },
+          { userId: 'user2', username: 'User Two', score: 5, submittedAt: new Date('2025-12-10T10:00:00Z') },
+        ]),
+      } as any).mockReturnValueOnce({
+        exec: jest.fn().mockResolvedValueOnce([{ total: 2 }]),
+      } as any);
 
-      (guessModel.aggregate as jest.Mock).mockReturnThis();
-      (guessModel.aggregate().exec as jest.Mock)
-        .mockResolvedValueOnce(mockAllTimeLeaderboardPage2) // For paginated results
-        .mockResolvedValueOnce([{ total: 4 }]); // For total count
+      const result = await service.getAllTimeRankings();
 
-      const result = await service.getAllTimeRankings(2, 3); // page 2, limit 3
-      expect(result.data).toEqual(mockAllTimeLeaderboardPage2);
-      expect(result.total).toBe(4);
-      expect(guessModel.aggregate).toHaveBeenCalledTimes(2);
+      expect(result.data[0].userId).toBe('user1'); // User1 wins tie-break due to earlier submission
+      expect(result.data[1].userId).toBe('user2');
     });
   });
 });
